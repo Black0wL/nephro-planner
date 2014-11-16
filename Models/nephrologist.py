@@ -46,7 +46,7 @@ class Nephrologist(object):
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM {}".format(Constants.DATABASE_TABLE_NEPHROLOGISTS))
             if cursor.rowcount == 0:
-
+                pass  # TODO
 
             connection.execute('''CREATE TABLE IF NOT EXISTS monthlyPlannings (
                 month TEXT NOT NULL,

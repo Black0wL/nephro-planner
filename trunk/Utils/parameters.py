@@ -12,9 +12,8 @@ from Utils.constants import Constants
 class Parameters():
     filename = 'parameters.yaml'
 
-    def __init__(self, _updateOnExit=False):
-        if _updateOnExit:
-            self.updateOnExit = _updateOnExit
+    def __init__(self, _save=False):
+        self.save = _save
 
     def __enter__(self):
         if not os.path.isfile(Parameters.filename) or os.stat(Parameters.filename)[6]==0:
@@ -30,6 +29,6 @@ class Parameters():
         return self
 
     def __exit__(self, type, value, traceback):
-        if self.updateOnExit:
+        if self.save:
             with open(Parameters.filename, 'w') as self.file:
                 self.file.write(dump(self.data, Dumper=Dumper))  # python will convert \n to os.linesep

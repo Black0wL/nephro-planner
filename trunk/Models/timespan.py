@@ -1,6 +1,3 @@
-from Enums.timeslot import TimeSlot
-from Enums.activity import Activity
-
 __author__ = "Christophe"
 
 class TimeSpan():

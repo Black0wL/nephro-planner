@@ -1,26 +1,27 @@
 __author__ = "Christophe"
 
-import sqlite3
 from Utils.parameters import Parameters
-from utils.constants import Constants
+from Utils.constants import Constants
+from Utils.database import Database
+from Enums.activity import Activity
+import sqlite3
 # from dateutil import rrule
 # from datetime import datetime, timedelta
 
 
 class Nephrologist(object):
     effortWeightCountersTemplate = {
-        'NEPHROLOGY': 0,
-        'DIALYSIS': 0,
-        'CONSULTATION': 0,
-        'OBLIGATION': 0,
-        'OTHERS': 0,
-        'OBLIGATION_HOLIDAY': 0,
-        'OBLIGATION_WEEKEND': 0
+        Activity.NEPHROLOGY.name: 0,
+        Activity.DIALYSIS.name: 0,
+        Activity.CONSULTATION.name: 0,
+        Activity.OTHERS.name: 0,
+        Activity.OBLIGATION.name: 0,
+        Activity.OBLIGATION_HOLIDAY.name: 0,
+        Activity.OBLIGATION_WEEKEND.name: 0
     }
-    team = {}  # contains #key=id, #value=nephrologist
-    offDays = []  # contains all personal off days (datetime)
-    allocations = {}  # contains all personal allocations that bind a physician to a TimeSlot and a particular activity
-    preferences = {}  # contains all personal preferences that bind a physician to a TimeSlot and a particular activity
+    # offDays = []  # contains all personal off days (datetime)
+    # allocations = {}  # contains all personal allocations that bind a physician to a TimeSlot and a particular activity
+    # preferences = {}  # contains all personal preferences that bind a physician to a TimeSlot and a particular activity
 
     def __init__(self, _id, _name, _offdays=None, _allocations=None, _preferences=None, _counters=None):
         self.id = _id
@@ -44,14 +45,15 @@ class Nephrologist(object):
     def __load__(cls):
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM {}".format(Constants.DATABASE_TABLE_NEPHROLOGISTS))
+            cursor.execute("SELECT * FROM {}".format(Database.DATABASE_TABLE_NEPHROLOGISTS))
             if cursor.rowcount == 0:
-                pass  # TODO
-
-            connection.execute('''CREATE TABLE IF NOT EXISTS monthlyPlannings (
-                month TEXT NOT NULL,
-                version INTEGER NOT NULL,
-                isReleasedVersion INTEGER NULL,
-                PRIMARY KEY (month ASC, version ASC)
-            )''')
+                cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
+                    Database.DATABASE_TABLE_NEPHROLOGISTS
+                ), [
+                    Nephrologist(1, "Sandrine"),
+                    Nephrologist(2, "Christine"),
+                    Nephrologist(3, "Severine")
+                ].__iter__())
         pass
+
+# print([x for x in Nephrologist.effortWeightCountersTemplate.keys()])

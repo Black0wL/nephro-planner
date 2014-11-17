@@ -2,12 +2,10 @@ __author__ = "Christophe"
 
 import calendar
 import datetime
-from Models.nephrologist import Nephrologist
 from Models.week import Week
-from Utils.parameters import Parameters
-from Utils.connector import Connector
-from Utils.constants import Constants
-import sqlite3
+from Enums.timeslot import TimeSlot
+from Enums.activity import Activity
+from Utils.database import Database
 
 PHYSICIANS = []
 HOLIDAYS = []  # national day off
@@ -16,37 +14,12 @@ RULES = {}
 
 
 def main():
-
-        try:
-            __init__()
-
-            HOLIDAYS.append(datetime.datetime(2014, 7, 14))
-
-            # populate(2014, 7)
-        finally:
-            pass
-            # connector.__exit__()
-
-def __init__():
-    with Parameters(True) as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
-        connection.execute('''CREATE TABLE IF NOT EXISTS nephrologists (
-            id INTEGER,
-            name TEXT NOT NULL UNIQUE,
-            holidays BLOB,
-            preferences BLOB,
-            obligations BLOB,
-            PRIMARY KEY(id ASC)
-        )''')
-
-        connection.execute('''CREATE TABLE IF NOT EXISTS monthlyPlannings (
-            month TEXT NOT NULL,
-            version INTEGER NOT NULL,
-            isReleasedVersion INTEGER NULL,
-            PRIMARY KEY (month ASC, version ASC)
-        )''')
-
-        connection.commit()
-    Nephrologist.__load__()
+    try:
+        from Models.nephrologist import Nephrologist
+        # Database.__load__()
+        # Nephrologist.__load__()
+    finally:
+        pass
 
 def populate(yearNumber, monthNumber):
     firstLast = calendar.monthrange(yearNumber, monthNumber)
@@ -59,18 +32,18 @@ def populate(yearNumber, monthNumber):
             allocatedResource = __getAvailablePhysician('ASTR_HOLIDAY', currentDay)
 
             REPARTITION[dayNumber] = Week.SLOTS['SPECIAL_HOLIDAY'].copy()
-            REPARTITION[dayNumber][Timeslot.FIRST_SHIFT][Activity.ASTR] = allocatedResource
-            REPARTITION[dayNumber][Timeslot.SECOND_SHIFT][Activity.ASTR] = allocatedResource
-            REPARTITION[dayNumber][Timeslot.THIRD_SHIFT][Activity.ASTR] = allocatedResource
+            REPARTITION[dayNumber][TimeSlot.FIRST_SHIFT.name][Activity.OBLIGATION.name] = allocatedResource
+            REPARTITION[dayNumber][TimeSlot.SECOND_SHIFT.name][Activity.OBLIGATION.name] = allocatedResource
+            REPARTITION[dayNumber][TimeSlot.THIRD_SHIFT.name][Activity.OBLIGATION.name] = allocatedResource
             allocatedResource.counters['ASTR_HOLIDAY'] += 1
             # this day is an offday
-            # its potential activities are reverted to Activity.ASTR
+            # its potential activities are reverted to Activity.OBLIGATION
         else:
             REPARTITION[dayNumber] = Week.SLOTS[dayOfWeek].copy()
             if (dayOfWeek == 0): # monday
-                REPARTITION[dayNumber][Timeslot.FIRST_SHIFT][Activity.ASTR] = allocatedResource
-                REPARTITION[dayNumber][Timeslot.SECOND_SHIFT][Activity.ASTR] = allocatedResource
-                REPARTITION[dayNumber][Timeslot.THIRD_SHIFT][Activity.ASTR] = allocatedResource
+                REPARTITION[dayNumber][TimeSlot.FIRST_SHIFT][Activity.OBLIGATION] = allocatedResource
+                REPARTITION[dayNumber][TimeSlot.SECOND_SHIFT][Activity.OBLIGATION] = allocatedResource
+                REPARTITION[dayNumber][TimeSlot.THIRD_SHIFT][Activity.OBLIGATION] = allocatedResource
                 pass
             elif (dayOfWeek == 1): # tuesday
                 pass
@@ -82,9 +55,9 @@ def populate(yearNumber, monthNumber):
                 allocatedResource = __getAvailablePhysician('ASTR_WEEKEND', currentDay)
 
                 REPARTITION[dayNumber] = Week.SLOTS[dayNumber].copy()
-                REPARTITION[dayNumber][Activity.AA]
+                # REPARTITION[dayNumber][Activity.OTHERS]
                 REPARTITION[dayNumber + 1] = {
-                    Timeslot.ALL_WEEKEND : allocatedResource
+                    TimeSlot.ALL_WEEKEND : allocatedResource
                 }
             elif (dayOfWeek == 5):
                 pass
@@ -101,13 +74,13 @@ def populate(yearNumber, monthNumber):
                 # it is a regular day
 
     # RULESET
-        # severine DIAL alloc --> ?
-        # adeline DIAL alloc --> ?
-        # christine DIAL alloc --> ?
+        # severine DIALYSIS alloc --> ?
+        # adeline DIALYSIS alloc --> ?
+        # christine DIALYSIS alloc --> ?
         # alloc libre : lundi/mercredi/vendredi matin.
-        # pas de DIAL le dimanche
-        # lors qu'il y a une ASTR le weekend, le vendredi matin est AA et le vendredi AM/lundi matin sont DIAL
-        # ASTR holiday/weekend non-secables
+        # pas de DIALYSIS le dimanche
+        # lors qu'il y a une OBLIGATION le weekend, le vendredi matin est OTHERS et le vendredi AM/lundi matin sont DIALYSIS
+        # OBLIGATION holiday/weekend non-secables
 
 def __getAvailablePhysician(counterName, currentDay):
     return sorted([physician for physician in PHYSICIANS if (currentDay not in physician.offDays)], key= lambda x: x.counters[counterName])[0]

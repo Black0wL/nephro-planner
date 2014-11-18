@@ -1,11 +1,10 @@
 __author__ = "Christophe"
 
+from enum import Enum
+
 
 # using duck typing at our advantage to serve generic logic to several enumeration classes
-class BaseEnumeration():
-    def __init__(self):
-        pass
-
+class Base(Enum):
     @classmethod
     def intersect(cls, _flag, _referential):
         __flag = list(cls.decompose(_flag))

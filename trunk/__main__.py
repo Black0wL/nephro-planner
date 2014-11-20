@@ -16,6 +16,7 @@ def main():
         # from Models.nephrologist import Nephrologist
         # Database.__load__()
         # Nephrologist.__load__()
+        '''
         from Models.monthly_planning import MonthlyPlanning
         MonthlyPlanning(1, 2014, 11)
 
@@ -27,6 +28,7 @@ def main():
         print(Week.SLOTS[4])
         print(Week.SLOTS[5])
         print(Week.SLOTS[6])
+        '''
     finally:
         pass
 

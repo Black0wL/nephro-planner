@@ -4,10 +4,12 @@ import sqlite3
 from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Utils.database import Database
+from datetime import datetime, date
+from monthly_planning import MonthlyPlanning
 
 
 def singleton(cls):
-    instances = {}
+    instances = dict()
     def __new__():
         if cls not in instances:
             instances[cls] = cls()
@@ -17,22 +19,34 @@ def singleton(cls):
 
 @singleton
 class GlobalPlanning():
-    def __init__(self):
-        pass
-
-    def __load__(self, _year, _month):
+    def __init__(self, _year, _month):
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
-            connection.execute('''
-                SELECT
+            cursor = connection.cursor()
 
-                FROM {} (
+            data_set = cursor.execute('''
+                SELECT
+                    MIN(date_pk)
+                FROM {}
                 WHERE
-                    isReleasedVersion = 1
-                    AND (12 * year + month) < {}
-            )'''.format(
-                Database.DATABASE_TABLE_MONTHLY_PLANNINGS_NEPHROLOGISTS,
-                (12 * _year + _month)
+                    date_pk <= '{}'
+                GROUP BY
+                    date_pk
+            '''.format(
+                Database.DATABASE_TABLE_MONTHLY_PLANNINGS,
+                date(_year, _month, 1).isoformat()  # first date of current year/month's tuple
             ))
+
+        self.monthly_plannings = dict({_year: dict()})  # adding current year as a key, because
+        if data_set.rowcount > 0:
+            _min_date = datetime.strptime(data_set.fetchone()[0], "%Y-%m-%d").date()
+            for (_m, _y) in [(x, y) for x in range(_min_date.year, _year+1) for y in range(1, 13)
+                             if 12*x+y >= 12*_min_date.year+_min_date.month]:
+                if _y not in self.monthly_plannings:
+                    self.monthly_plannings[_y] = {}
+                self.monthly_plannings[_y][_m] = MonthlyPlanning(_y, _m)
+
+        if _month not in self.monthly_plannings[_year]:  # because even if previous months have already been set, current month might not exist
+            self.monthly_plannings[_month] = MonthlyPlanning(_year, _month)
 
 '''
 s1=GlobalPlanning()

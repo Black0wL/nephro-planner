@@ -15,3 +15,7 @@ class TimeSlot(Base):
 # SECOND_SHIFT_BOUNDARY_MIN = 13
 # THIRD_SHIFT_BOUNDARY_MIN = 21
 
+# print(TimeSlot.FIRST_SHIFT.value)
+# print(TimeSlot.SECOND_SHIFT.value)
+# print(TimeSlot.THIRD_SHIFT.value)
+# print(TimeSlot.contains(2, 5))

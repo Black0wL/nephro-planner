@@ -5,6 +5,7 @@ from Enums.activity import Activity
 
 
 class Week():
+    KEY_SPECIAL_HOLIDAY = 'SPECIAL_HOLIDAY'
     SLOTS = {
         0: {
             TimeSlot.FIRST_SHIFT.name: {
@@ -103,7 +104,7 @@ class Week():
                 Activity.OBLIGATION_WEEKEND.name: None
             }
         },
-        'SPECIAL_HOLIDAY': {
+        KEY_SPECIAL_HOLIDAY: {
             TimeSlot.FIRST_SHIFT.name: {
                 Activity.OBLIGATION_HOLIDAY.name: None
             },

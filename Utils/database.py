@@ -24,7 +24,7 @@ class Database:
                 id_nephrologist_fk INTEGER NOT NULL,
                 timespan BLOB NOT NULL,
                 PRIMARY KEY(id_nephrologist_fk ASC, timespan ASC),
-                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id)
+                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id_pk)
             )'''.format(
                 Database.DATABASE_TABLE_NEPHROLOGISTS_HOLIDAYS,
                 Database.DATABASE_TABLE_NEPHROLOGISTS
@@ -36,7 +36,7 @@ class Database:
                 time_slot_type INTEGER NULL,
                 activity_type INTEGER NULL,
                 PRIMARY KEY(id_nephrologist_fk, timespan),
-                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id)
+                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id_pk)
             )'''.format(
                 Database.DATABASE_TABLE_NEPHROLOGISTS_PREFERENCES,
                 Database.DATABASE_TABLE_NEPHROLOGISTS
@@ -44,11 +44,11 @@ class Database:
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 date_pk TEXT NOT NULL,
-                time_slot_type INTEGER NOT NULL,
+                time_slot_type_pk INTEGER NOT NULL,
                 activity_type INTEGER NOT NULL,
                 id_nephrologist_fk INTEGER NOT NULL,
-                PRIMARY KEY(date_pk, month_pk),
-                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id)
+                PRIMARY KEY(date_pk, time_slot_type_pk, activity_type, id_nephrologist_fk),
+                FOREIGN KEY(id_nephrologist_fk) REFERENCES {}(id_pk)
             )'''.format(
                 Database.DATABASE_TABLE_MONTHLY_PLANNINGS,
                 Database.DATABASE_TABLE_NEPHROLOGISTS

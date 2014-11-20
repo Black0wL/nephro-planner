@@ -21,6 +21,7 @@ class Base(Enum):
 
     @classmethod
     def decompose(cls, _flag):
+        print(type(_flag))
         if type(_flag) is not int:
             raise UserWarning("flag must be of type integer.")
         else:
@@ -37,13 +38,11 @@ class Base(Enum):
 
     @classmethod
     def flags(cls):
-        _list = vars(cls).iteritems()
-        _list.remove(cls.NONE)
-        return _list
+        return list([flag for flag in cls if flag.value != 0])
 
     @classmethod
     def tostring(cls, val):
-        for k,v in cls.flags():
+        for k, v in cls.flags():
             if v == val:
                 return k
 

@@ -73,11 +73,10 @@ class MonthlyPlanning():
                     row[3]
                 )
 
-        # TODO: if ~toutes les dates~ not in self.daily_plannings:
         for _day in [x for _week in calendar.monthcalendar(_year, _month) for x in _week if x != 0]:
             _date = date(_year, _month, _day)
-            self.daily_plannings[_date] = DailyPlanning(_date)
-            # TODO: allocate nephrologists to activities & update counters
+            if _date not in self.daily_plannings:
+                self.daily_plannings[_date] = DailyPlanning(_date)
 
 
 

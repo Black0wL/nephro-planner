@@ -48,6 +48,12 @@ class GlobalPlanning():
         if _month not in self.monthly_plannings[_year]:  # because even if previous months have already been set, current month might not exist
             self.monthly_plannings[_month] = MonthlyPlanning(_year, _month)
 
+        # TODO: allocate nephrologists to activities & update counters
+
+    @property
+    def counters(self):
+        return self.__x
+
 '''
 s1=GlobalPlanning()
 print(id(s1))

@@ -5,6 +5,8 @@ from week import Week
 from workalendar.europe import France
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
+from Models.nephrologist import Nephrologist
+from collections import Counter
 import copy
 
 
@@ -66,6 +68,16 @@ class DailyPlanning():
                 # TODO: detect whether time slot for activity is already allocated!
                 self.profile[_time_slot_type.name][_activity_type.name] = _id_nephrologist
         return self
+
+    @property
+    def counters(self, _reset=False):  # basically inverse the day profile, eluding time slots on the run
+        if _reset:
+            self._counters = None
+        if not self._counters:
+            self._counters = dict([(x, Counter()) for x in Nephrologist.team])  # creating a new counters profile for each nephrologist
+            for (_id_nephrologist, _activity_type) in [(z, y) for x in self.profile for y in self.profile[x] for z in self.profile[x][y]]:
+                self._counters[_id_nephrologist][_activity_type] += 1
+        return self._counters
 
 
 '''

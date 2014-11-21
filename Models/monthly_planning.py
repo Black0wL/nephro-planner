@@ -8,6 +8,7 @@ from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Utils.database import Database
 from datetime import timedelta, date, datetime
+from collections import Counter
 import calendar
 
 
@@ -44,6 +45,9 @@ class MonthlyPlanning():
     }
 
     def __init__(self, _year, _month):
+        self.year = _year
+        self.month = _month
+
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
 
@@ -63,8 +67,8 @@ class MonthlyPlanning():
                 date(_year, _month, calendar.monthrange(_year, _month)[1]).isoformat()  # last month's day
             ))
 
-        self.daily_plannings = {}
-        if data_set.rowcount > 0:
+        self.daily_plannings = dict()
+        if data_set.rowcount > 0:  # load an resource-allocated image of the specific days
             for row in data_set.fetchmany():
                 _date = datetime.strptime(row[0], "%Y-%m-%d").date()
                 self.daily_plannings[_date] = DailyPlanning(_date).__allocate__(
@@ -73,10 +77,50 @@ class MonthlyPlanning():
                     row[3]
                 )
 
-        for _day in [x for _week in calendar.monthcalendar(_year, _month) for x in _week if x != 0]:
-            _date = date(_year, _month, _day)
-            if _date not in self.daily_plannings:
-                self.daily_plannings[_date] = DailyPlanning(_date)
+    @property
+    def counters(self, _reset=False):
+        if _reset:
+            self._counters = None
+        if not self._counters:
+            for (_id_nephrologist, _daily_planning_counters) in [(y, self.daily_plannings[x].counters()) for x in self.daily_plannings for y in self.daily_plannings[x].counters()]:
+                if _id_nephrologist not in self._counters:
+                    self._counters[_id_nephrologist] = Counter()
+                self._counters[_id_nephrologist] += _daily_planning_counters[_id_nephrologist]
+        return self._counters
+
+    # TODO: implement proper rendering into excel spreadsheet
+    def output(self, filename, sheet_name, list1, list2, x, y, z):
+        import xlwt
+        book = xlwt.Workbook()
+        sh = book.add_sheet(sheet_name)
+
+        variables = [x, y, z]
+        x_desc = 'Display'
+        y_desc = 'Dominance'
+        z_desc = 'Test'
+        desc = [x_desc, y_desc, z_desc]
+
+        col1_name = 'Stimulus Time'
+        col2_name = 'Reaction Time'
+
+        #You may need to group the variables together
+        #for n, (v_desc, v) in enumerate(zip(desc, variables)):
+        for n, v_desc, v in enumerate(zip(desc, variables)):
+            sh.write(n, 0, v_desc)
+            sh.write(n, 1, v)
+
+        n+=1
+
+        sh.write(n, 0, col1_name)
+        sh.write(n, 1, col2_name)
+
+        for m, e1 in enumerate(list1, n+1):
+            sh.write(m, 0, e1)
+
+        for m, e2 in enumerate(list2, n+1):
+            sh.write(m, 1, e2)
+
+        book.save(filename)
 
 
 

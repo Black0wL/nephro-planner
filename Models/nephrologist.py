@@ -10,7 +10,7 @@ import sqlite3
 
 
 class Nephrologist(object):
-    effortWeightCountersTemplate = {
+    counters_template = {
         Activity.NEPHROLOGY.name: 0,
         Activity.DIALYSIS.name: 0,
         Activity.CONSULTATION.name: 0,
@@ -19,8 +19,7 @@ class Nephrologist(object):
         Activity.OBLIGATION_HOLIDAY.name: 0,
         Activity.OBLIGATION_WEEKEND.name: 0
     }
-    # offDays = []  # contains all personal off days (datetime)
-    # allocations = {}  # contains all personal allocations that bind a physician to a TimeSlot and a particular activity
+    # holidays = []  # contains all personal off days (datetime)
     # preferences = {}  # contains all personal preferences that bind a physician to a TimeSlot and a particular activity
 
     def __init__(self, _id, _name, _offdays=None, _allocations=None, _preferences=None, _counters=None):
@@ -42,18 +41,16 @@ class Nephrologist(object):
         return self.__str__()
 
     @classmethod
-    def __load__(cls):
-        with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
-            cursor = connection.cursor()
-            cursor.execute("SELECT * FROM {}".format(Database.DATABASE_TABLE_NEPHROLOGISTS))
-            if cursor.rowcount == 0:
-                cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
-                    Database.DATABASE_TABLE_NEPHROLOGISTS
-                ), [
-                    Nephrologist(1, "Sandrine"),
-                    Nephrologist(2, "Christine"),
-                    Nephrologist(3, "Severine")
-                ].__iter__())
-        pass
+    @property
+    def team(cls):
+        if not cls._team:
+            cls._team = {}
+            with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT * FROM {}".format(Database.DATABASE_TABLE_NEPHROLOGISTS))
+                if cursor.rowcount > 0:
+                    for row in cursor.fetchmany():
+                        cls._team[row[0]] = Nephrologist(row[0], row[1])
+        return cls._team
 
 # print([x for x in Nephrologist.effortWeightCountersTemplate.keys()])

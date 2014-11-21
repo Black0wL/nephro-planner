@@ -4,6 +4,7 @@ __author__ = "Christophe"
 import sqlite3
 from Utils.parameters import Parameters
 from Utils.constants import Constants
+from Models.nephrologist import Nephrologist
 
 class Database:
     DATABASE_TABLE_NEPHROLOGISTS = 'nephrologists'
@@ -19,6 +20,19 @@ class Database:
                 name TEXT NOT NULL UNIQUE,
                 PRIMARY KEY(id_pk ASC)
             )'''.format(Database.DATABASE_TABLE_NEPHROLOGISTS))
+
+            # insert nephrologists
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM {}".format(Database.DATABASE_TABLE_NEPHROLOGISTS))
+            if cursor.rowcount == 0:
+                cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
+                    Database.DATABASE_TABLE_NEPHROLOGISTS
+                ), [
+                    Nephrologist(1, "Sandrine"),
+                    Nephrologist(2, "Christine"),
+                    Nephrologist(3, "Severine")
+                ].__iter__())
+                connection.commit()
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 id_nephrologist_fk INTEGER NOT NULL,

@@ -6,6 +6,9 @@ from Utils.constants import Constants
 from Utils.database import Database
 from datetime import datetime, date
 from monthly_planning import MonthlyPlanning
+from collections import Counter
+from daily_planning import DailyPlanning
+import calendar
 
 
 def singleton(cls):
@@ -20,6 +23,9 @@ def singleton(cls):
 @singleton
 class GlobalPlanning():
     def __init__(self, _year, _month):
+        self.year = _year
+        self.month = _month
+
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
 
@@ -36,7 +42,7 @@ class GlobalPlanning():
                 date(_year, _month, 1).isoformat()  # first date of current year/month's tuple
             ))
 
-        self.monthly_plannings = dict({_year: dict()})  # adding current year as a key, because
+        self.monthly_plannings = dict({_year: dict()})  # adding current year as a key
         if data_set.rowcount > 0:
             _min_date = datetime.strptime(data_set.fetchone()[0], "%Y-%m-%d").date()
             for (_m, _y) in [(x, y) for x in range(_min_date.year, _year+1) for y in range(1, 13)
@@ -45,14 +51,28 @@ class GlobalPlanning():
                     self.monthly_plannings[_y] = {}
                 self.monthly_plannings[_y][_m] = MonthlyPlanning(_y, _m)
 
-        if _month not in self.monthly_plannings[_year]:  # because even if previous months have already been set, current month might not exist
-            self.monthly_plannings[_month] = MonthlyPlanning(_year, _month)
+    # TODO: allocate nephrologists to activities & update counters
+    def __complete__(self):
+        if self.month not in self.monthly_plannings[self.year]:  # because even if previous months have already been set, current month might not exist
+            self.monthly_plannings[self.month] = MonthlyPlanning(self.year, self.month)
 
-        # TODO: allocate nephrologists to activities & update counters
+        for _day in [x for _week in calendar.monthcalendar(self.year, self.month) for x in _week if x != 0]:
+            _date = date(self.year, self.month, _day)
+            if _date not in self.daily_plannings:
+                # TODO: allocate new DailyPlanning instance to someone!
+                self.daily_plannings[_date] = DailyPlanning(_date).__allocate__()
+        return self
 
     @property
-    def counters(self):
-        return self.__x
+    def counters(self, _reset=False):
+        if _reset:
+            self._counters = None
+        if not self._counters:
+            for (_id_nephrologist, _monthly_planning_counters) in [(y, self.monthly_plannings[x].counters()) for x in self.monthly_plannings for y in self.monthly_plannings[x].counters()]:
+                if _id_nephrologist not in self._counters:
+                    self._counters[_id_nephrologist] = Counter()
+                self._counters[_id_nephrologist] += _monthly_planning_counters[_id_nephrologist]
+        return self._counters
 
 '''
 s1=GlobalPlanning()

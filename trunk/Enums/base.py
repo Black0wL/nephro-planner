@@ -6,6 +6,10 @@ from enum import Enum
 # using duck typing at our advantage to serve generic logic to several enumeration classes
 class Base(Enum):
     @classmethod
+    def highest(cls):
+        return sum([x.value for x in cls.flags()])
+
+    @classmethod
     def intersect(cls, _flag, _referential):
         __flag = list(cls.decompose(_flag))
         __referential = list(cls.decompose(_referential))
@@ -25,11 +29,11 @@ class Base(Enum):
         if type(_flag) is not int:
             raise UserWarning("flag must be of type integer.")
         else:
-            highest = sum([x.value for x in cls.flags()])
-            if _flag > highest:
+            _highest = cls.highest()
+            if _flag > _highest:
                 raise UserWarning("flag's value: {} is higher than the total sum of enum's flags: {}.".format(
                     _flag,
-                    highest
+                    _highest
                 ))
         for _mask in cls.flags():
             # _flag is Activity and (_mask.value & _flag.value) or

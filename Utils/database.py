@@ -28,10 +28,11 @@ class Database:
                 cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
                     Database.DATABASE_TABLE_NEPHROLOGISTS
                 ), [
-                    Nephrologist(1, "Sandrine"),
+                    Nephrologist(1, "Adeline"),
                     Nephrologist(2, "Christine"),
-                    Nephrologist(3, "Severine")
-                ].__iter__())
+                    Nephrologist(3, "Severine"),
+                    Nephrologist(3, "Interne")
+                ].__iter__())  # does it even work?
                 connection.commit()
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
@@ -44,6 +45,8 @@ class Database:
                 Database.DATABASE_TABLE_NEPHROLOGISTS
             ))
 
+            # TODO: add nephrologists holidays!
+
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 id_nephrologist_fk INTEGER NOT NULL,
                 timespan BLOB NOT NULL,
@@ -55,6 +58,8 @@ class Database:
                 Database.DATABASE_TABLE_NEPHROLOGISTS_PREFERENCES,
                 Database.DATABASE_TABLE_NEPHROLOGISTS
             ))
+
+            # TODO: modify table schema (or TimeSpan instance fields) + add nephrologists preferences!
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 date_pk TEXT NOT NULL,

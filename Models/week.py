@@ -8,111 +8,111 @@ class Week():
     KEY_SPECIAL_HOLIDAY = 'SPECIAL_HOLIDAY'
     SLOTS = {
         0: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.OTHERS.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.OTHERS: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION: None
             }
         },
         1: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION: None
             }
         },
         2: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.OTHERS.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.OTHERS: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
+            TimeSlot.THIRD_SHIFT: {
                 Activity.OBLIGATION.name: None
             }
         },
         3: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.CONSULTATION.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.CONSULTATION: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION: None
             }
         },
         4: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.OTHERS.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.OTHERS: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.DIALYSIS.name: None,
-                Activity.NEPHROLOGY.name: None,
-                Activity.OTHERS.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.DIALYSIS: None,
+                Activity.NEPHROLOGY: None,
+                Activity.OTHERS: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION: None
             }
         },
         5: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             }
         },
         6: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION_WEEKEND.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION_WEEKEND: None
             }
         },
         KEY_SPECIAL_HOLIDAY: {
-            TimeSlot.FIRST_SHIFT.name: {
-                Activity.OBLIGATION_HOLIDAY.name: None
+            TimeSlot.FIRST_SHIFT: {
+                Activity.OBLIGATION_HOLIDAY: None
             },
-            TimeSlot.SECOND_SHIFT.name: {
-                Activity.OBLIGATION_HOLIDAY.name: None
+            TimeSlot.SECOND_SHIFT: {
+                Activity.OBLIGATION_HOLIDAY: None
             },
-            TimeSlot.THIRD_SHIFT.name: {
-                Activity.OBLIGATION_HOLIDAY.name: None
+            TimeSlot.THIRD_SHIFT: {
+                Activity.OBLIGATION_HOLIDAY: None
             }
         }
     }

@@ -26,6 +26,7 @@ def singleton(cls):
 
 @singleton
 class MonthlyPlanning():
+    '''
     time_slots_to_time_spans = {
         TimeSlot.FIRST_SHIFT.name: TimeSpan(
             _initial=timedelta(hours=5),
@@ -43,6 +44,7 @@ class MonthlyPlanning():
             _final=timedelta(days=1, hours=5, microseconds=-1)
         )
     }
+    '''
 
     def __init__(self, _year, _month):
         self.year = _year

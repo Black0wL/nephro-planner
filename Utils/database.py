@@ -5,6 +5,8 @@ import sqlite3
 from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Models.nephrologist import Nephrologist
+from Enums.activity import Activity
+
 
 class Database:
     DATABASE_TABLE_NEPHROLOGISTS = 'nephrologists'
@@ -31,7 +33,7 @@ class Database:
                     Nephrologist(1, "Adeline"),
                     Nephrologist(2, "Christine"),
                     Nephrologist(3, "Severine"),
-                    Nephrologist(3, "Interne")
+                    Nephrologist(4, "Interne", [Activity.NEPHROLOGY])
                 ].__iter__())  # does it even work?
                 connection.commit()
 

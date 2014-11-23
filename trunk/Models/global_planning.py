@@ -9,6 +9,8 @@ from monthly_planning import MonthlyPlanning
 from collections import Counter
 from daily_planning import DailyPlanning
 from Enums.timeslot import TimeSlot
+from Enums.activity import Activity
+from Models.nephrologist import Nephrologist
 import calendar
 
 
@@ -84,17 +86,52 @@ class GlobalPlanning():
 
         from operator import itemgetter
 
-        # TODO: tip! a nephrologist has only a one activity per timeslot unit throughput, dude...
-        # TODO: decide... I'm not sure about the _allowed_time_slots thing.
-        def usual_day(__daily_planning, _allowed_time_slots=TimeSlot.highest()):
-            for (_time_slot, _activity) in [(x, y) for x in __daily_planning if TimeSlot.contains(x, _allowed_time_slots) for y in __daily_planning[x] if not __daily_planning[x][y]]:
-                _id_nephrologist, counter = max([(x, self.counters()[x]) for x in self.counters()], key=itemgetter(1))  # have to find the max of self.counters()[x]
-                if _id_nephrologist:  # can it ever happen?
-                    __daily_planning.__allocate__(_time_slot, _activity, _id_nephrologist)
-                    if not counter:  # can it ever happen?
-                        counter = Counter()
-                        self.counters()[_id_nephrologist] = counter
-                    counter[_activity] += 1
+        def usual_day(__daily_planning):
+            # for each time slot of the daily planning that are authorized to be allocated
+            for _time_slot in __daily_planning:
+                # initializing the "one activity per time slot per nephrologist throughput" watcher
+                _already_allocated_id_nephrologists = []
+                # for each activity available for the current time slot that is not already allocated
+                for _activity in [y for y in __daily_planning[_time_slot] if not __daily_planning[_time_slot][y]]:
+                    # nephrologist has a minimal counter on the specific activity
+                    # nephrologist is not already allocated on an activity for the current time slot
+                    # nephrologist has clearance for specific activity
+                    # TODO: nephrologist is on a working day
+                    # nephrologist who does DIALYSIS on SECOND_SHIFT does OBLIGATION on THIRD_SHIFT
+                    if _time_slot is TimeSlot.THIRD_SHIFT and _activity is Activity.OBLIGATION:
+                        continue  # managed elsewhere
+
+                    __allocate__(__daily_planning, _time_slot, _activity, _already_allocated_id_nephrologists)
+
+                    if _time_slot is TimeSlot.SECOND_SHIFT and _activity is Activity.DIALYSIS:
+                        if TimeSlot.THIRD_SHIFT in __daily_planning and Activity.OBLIGATION in __daily_planning[TimeSlot.THIRD_SHIFT]:
+                            __allocate__(__daily_planning, TimeSlot.THIRD_SHIFT, Activity.OBLIGATION, _already_allocated_id_nephrologists)
+
+        def __allocate__(__daily_planning, __time_slot, __activity, __already_allocated_id_nephrologists):
+            _id_nephrologist, counter = min(
+                [(z, self.counters()[z]) for z in self.counters()
+                 if z not in __already_allocated_id_nephrologists
+                 if Activity.contains(__activity.value, Nephrologist.team[z].activities)
+                 if Nephrologist.team[z].holidays
+                ], key=itemgetter(1)[__activity]
+            )
+            if _id_nephrologist:
+                # update allocation map for specific time slot
+                __already_allocated_id_nephrologists.append(_id_nephrologist)
+                # allocate specific activity for specific time slot to specific nephrologist
+                __daily_planning.__allocate__(__time_slot, __activity, _id_nephrologist)
+                # update counting map
+                if not counter:
+                    counter = Counter()
+                    self.counters()[_id_nephrologist] = counter
+                counter[__activity] += 1
+            else:
+                raise UserWarning(
+                    "activity: {} unallocated (time slot: {}, date: {})".format(
+                    __activity,
+                    __time_slot,
+                    __daily_planning.date
+                ))
 
         def uncanny_day(__daily_planning):
             # TODO: implement!
@@ -107,7 +144,10 @@ class GlobalPlanning():
         if _reset:
             self._counters = None
         if not self._counters:
-            for (_id_nephrologist, _monthly_planning_counters) in [(y, self.monthly_plannings[x].counters()) for x in self.monthly_plannings for y in self.monthly_plannings[x].counters()]:
+            for (_id_nephrologist, _monthly_planning_counters) in [
+                (y, self.monthly_plannings[x].counters())
+                for x in self.monthly_plannings
+                for y in self.monthly_plannings[x].counters()]:
                 if _id_nephrologist not in self._counters:
                     self._counters[_id_nephrologist] = Counter()
                 self._counters[_id_nephrologist] += _monthly_planning_counters[_id_nephrologist]

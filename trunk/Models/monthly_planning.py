@@ -28,17 +28,17 @@ def singleton(cls):
 class MonthlyPlanning():
     '''
     time_slots_to_time_spans = {
-        TimeSlot.FIRST_SHIFT.name: TimeSpan(
+        TimeSlot.FIRST_SHIFT.name: Perioder(
             _initial=timedelta(hours=5),
             _frequency=timedelta(days=1),
             _final=timedelta(hours=13, microseconds=-1)
         ),
-        TimeSlot.SECOND_SHIFT.name: TimeSpan(
+        TimeSlot.SECOND_SHIFT.name: Perioder(
             _initial=timedelta(hours=13),
             _frequency=timedelta(days=1),
             _final=timedelta(hours=21, microseconds=-1)
         ),
-        TimeSlot.THIRD_SHIFT.name: TimeSpan(
+        TimeSlot.THIRD_SHIFT.name: Perioder(
             _initial=timedelta(hours=21),
             _frequency=timedelta(days=1),
             _final=timedelta(days=1, hours=5, microseconds=-1)

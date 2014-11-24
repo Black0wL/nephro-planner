@@ -25,13 +25,20 @@ class DailyPlanning():
     def __init__(self, _date):
         self.date = _date
 
-        # if needed, _calendar.is_working_day can deal with extra working days/holidays
-        if France().is_working_day(_date):
-            for _week in calendar.monthcalendar(_date.year, _date.month):
-                if _date.day in _week:
-                    self.profile = copy.deepcopy(Week.SLOTS[_week.index(_date.day)])
-        else:
-            self.profile = copy.deepcopy(Week.SLOTS[Week.KEY_SPECIAL_HOLIDAY])
+        # if required, _calendar.is_working_day can deal with extra working days/holidays
+        _is_working_day = France().is_working_day(_date)
+        for _week in calendar.monthcalendar(_date.year, _date.month):
+            if _date.day in _week:
+                _index = _week.index(_date.day)
+                # normal working day if no holiday or if weekend day
+                # tip: holiday during weekend are considered as normal weekend working day
+                if _is_working_day or _index in [5, 6]:
+                    self.profile = copy.deepcopy(Week.SLOTS[_index])
+                # unusual working day if holiday
+                else:
+                    self.profile = copy.deepcopy(Week.SLOTS[Week.KEY_SPECIAL_HOLIDAY])
+            else:
+                continue
 
         if not self.profile:
             raise UserWarning("daily planning's profile has not been successfully resolved.")

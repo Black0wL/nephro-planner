@@ -12,6 +12,7 @@ class Activity(Base):
     OBLIGATION = 1 << 4
     OBLIGATION_HOLIDAY = 1 << 5
     OBLIGATION_WEEKEND = 1 << 6
+    OBLIGATION_RECOVERY = 1 << 7
 
 # print(1 << 1)
 # print(list(Activity.intersect(47, 31)))

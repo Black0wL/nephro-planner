@@ -26,7 +26,16 @@ def singleton(cls):
 @singleton
 class GlobalPlanning():
     def __init__(self, _year, _month):
+        if not _year:
+            raise UserWarning("year can not be None.")
+        elif not isinstance(_year, int):
+            raise UserWarning("year must be of type {}".format(int))
         self.year = _year
+
+        if not _month:
+            raise UserWarning("month can not be None.")
+        elif not isinstance(_month, int):
+            raise UserWarning("month must be of type {}".format(int))
         self.month = _month
 
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
@@ -47,8 +56,11 @@ class GlobalPlanning():
 
         self.monthly_plannings = dict({_year: dict()})  # adding current year as a key
         if data_set.rowcount > 0:
+            # find first ever monthly planning date
             _min_date = datetime.strptime(data_set.fetchone()[0], "%Y-%m-%d").date()
-            for (_m, _y) in [(x, y) for x in range(_min_date.year, _year+1) for y in range(1, 13) if 12*x+y >= 12*_min_date.year+_min_date.month]:  # TODO: might be refactored with an enumeration()
+            # load all existing monthly plannings
+            # TODO: might be refactored with an enumeration()
+            for (_m, _y) in [(x, y) for x in range(_min_date.year, _year+1) for y in range(1, 13) if 12*x+y >= 12*_min_date.year+_min_date.month]:
                 if _y not in self.monthly_plannings:
                     self.monthly_plannings[_y] = dict()
                 self.monthly_plannings[_y][_m] = MonthlyPlanning(_y, _m)
@@ -57,12 +69,14 @@ class GlobalPlanning():
     def __allocate__(self):
         if self.year not in self.monthly_plannings:
             self.monthly_plannings[self.year] = dict()
-        if self.month not in self.monthly_plannings[self.year]:  # loading current month and potentially preexisting subjacent DailyPlannings instances...
+        # loading current month and potentially preexisting subjacent DailyPlannings instances...
+        if self.month not in self.monthly_plannings[self.year]:
             self.monthly_plannings[self.year][self.month] = MonthlyPlanning(self.year, self.month)
 
         existing_monthly_planning = self.monthly_plannings[self.year][self.month]
 
-        for _week in calendar.monthcalendar(self.year, self.month):  # eliminating 0-es provided by monthcalendar...
+        for _week in calendar.monthcalendar(self.year, self.month):
+            # eliminating 0-es provided by monthcalendar...
             for _day in [x for x in _week if x != 0]:
                 _date = date(self.year, self.month, _day)
 
@@ -93,7 +107,8 @@ class GlobalPlanning():
             for _time_slot in __daily_planning:
                 # for each activity available for the current time slot that is not already allocated
                 for _activity in [y for y in __daily_planning[_time_slot] if not __daily_planning[_time_slot][y]]:
-                    # TODO: nephrologist who does DIALYSIS on SECOND_SHIFT does OBLIGATION on THIRD_SHIFT
+                    # TODO: nephrologist who does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday) does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
+                    # TODO: examine preferences and aversions (deal with CONSULTATION first)
                     if _time_slot is TimeSlot.THIRD_SHIFT and _activity is Activity.OBLIGATION:
                         continue  # managed elsewhere
                     # allocate current time slot/activity combo
@@ -117,7 +132,7 @@ class GlobalPlanning():
                     [(z, self.counters()[z]) for z in self.counters()
                      if z not in __already_allocated_id_nephrologists
                      if Activity.contains(__activity.value, Nephrologist.team[z].activities)
-                     if Nephrologist.team[z].holidays
+                     # if Nephrologist.team[z].holidays
                     ], key=itemgetter(1)[__activity]
                 )
 
@@ -142,8 +157,14 @@ class GlobalPlanning():
                 ))
 
         def uncanny_day(__daily_planning):
-            # TODO: implement!
-
+            # TODO: choose nephrologist N that has minimal OBLIGATION_WEEKEND counter
+            # TODO: N does OTHERS on FIRST_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
+            # TODO: N does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
+            # TODO: N does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
+            # TODO: N does OBLIGATION_WEEKEND on all SHIFTS, DAY+1
+            # TODO: N does OBLIGATION_WEEKEND on all SHIFTS, DAY+2
+            # TODO: N does DIALYSIS on DAY+3/FIRST_SHIFT (or OBLIGATION_HOLIDAY if DAY+3 is holiday)
+            # TODO: N earns +1 OBLIGATION_RECOVERY
             pass
 
         return self

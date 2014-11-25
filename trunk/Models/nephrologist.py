@@ -68,7 +68,8 @@ class Nephrologist(object):
             raise UserWarning("activities can not be None.")
         elif not isinstance(_activities, list):
             raise UserWarning("activities must be of type {}".format(list))
-        self.activities = _activities if _activities else [Activity.NONE]  # the activities the nephrologist can be allocated on
+        # the activities the nephrologist can be allocated on
+        self.activities = _activities if _activities else [Activity.NONE]
 
         if _holidays and not isinstance(_holidays, list):
             raise UserWarning("holidays should be of type {}".format(list))
@@ -76,16 +77,21 @@ class Nephrologist(object):
 
         if _preferences and not isinstance(_preferences, dict):
             raise UserWarning("preferences should be of type {}".format(dict))
-        self.preferences = _preferences if _preferences else {}  # contains all personal preferences that bind a nephrologist to a TimeSlot and a particular activity
+        # contains all personal preferences that bind a nephrologist to a TimeSlot and a particular activity
+        self.preferences = _preferences if _preferences else {}
 
         if _aversions and not isinstance(_aversions, dict):
             raise UserWarning("aversions should be of type {}".format(dict))
-        self.aversions = _aversions if _aversions else {}  # contains all personal aversions that a nephrologist has to a TimeSlot and a particular activity
+        # contains all personal aversions that a nephrologist has to a TimeSlot and a particular activity
+        self.aversions = _aversions if _aversions else {}
 
     def __holidays_to_time_slots__(self, _month, _year):
         # TODO: purpose is to provide a map { day_number: [off_time_slots]} for current {year, month}
         # eliminating 0-es provided by calendar.monthcalendar...
         for _day in [x for x in calendar.monthcalendar(_year, _month) if x != 0]:
+            for _perioder in self.holidays:
+                for _time_slot in _perioder.__expand__(_year, _month):
+                    pass
             pass
         pass
 

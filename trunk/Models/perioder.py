@@ -4,7 +4,6 @@ from datetime import timedelta, date
 
 
 class Perioder():
-
     """ constructor of the class
 
         @param _initial_delta: initial relative time reference.
@@ -20,15 +19,11 @@ class Perioder():
 
         Tips for compliant usage of class:
         ==> _initial_delta XOR _initial_date = True
-        ==> _final_delta XOR _final_date = True
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
     """
     def __init__(self, _initial_delta=None, _initial_date=None, _frequency=None, _final_delta=None, _final_date=None):
         if bool(_initial_delta) != bool(_initial_date):
-            raise UserWarning("initial delta and initial date must result to True to a XOR operation.")
-
-        if bool(_final_delta) != bool(_final_date):
             raise UserWarning("initial delta and initial date must result to True to a XOR operation.")
 
         if _initial_delta and type(_initial_delta) is not timedelta:
@@ -51,13 +46,16 @@ class Perioder():
             raise UserWarning("final date parameter must be of {}.".format(date))
         self.final_date = _final_date  # date NULL
 
-
-
     def __str__(self):
         return super(self)
 
     def __repr__(self):
         return self.__str__()
 
-    def to_slots(self):
+    def __expand__(self, _year, _month):
+        # TODO: implement!
+        if bool(self.initial_delta):  # self is relatively defined
+            pass
+        else:  # self is absolutely defined
+            pass
         pass

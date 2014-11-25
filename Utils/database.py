@@ -5,6 +5,7 @@ import sqlite3
 from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Models.nephrologist import Nephrologist
+from Models.perioder import Perioder
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 
@@ -68,7 +69,9 @@ class Database:
                 0: {  # monday
                     TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
                 }
-            }),
+            }, _holidays=[
+                Perioder()
+            ]),
             Nephrologist(4, "Interne", _activities=[
                 Activity.NEPHROLOGY,
                 Activity.OTHERS,

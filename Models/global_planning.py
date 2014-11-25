@@ -1,17 +1,11 @@
 __author__ = "Christophe"
 
-import sqlite3
-from Utils.parameters import Parameters
-from Utils.constants import Constants
-from Utils.database import Database
 from datetime import datetime, date
 from monthly_planning import MonthlyPlanning
-from collections import Counter
 from daily_planning import DailyPlanning
 from Enums.timeslot import TimeSlot
 from Enums.activity import Activity
-from Models.nephrologist import Nephrologist
-import calendar
+from collections import Counter
 
 
 def singleton(cls):
@@ -38,6 +32,10 @@ class GlobalPlanning():
             raise UserWarning("month must be of type {}".format(int))
         self.month = _month
 
+        import sqlite3
+        from Utils.parameters import Parameters
+        from Utils.constants import Constants
+        from Utils.database import Database
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
 
@@ -65,7 +63,7 @@ class GlobalPlanning():
                     self.monthly_plannings[_y] = dict()
                 self.monthly_plannings[_y][_m] = MonthlyPlanning(_y, _m)
 
-    # TODO: allocate nephrologists to activities & update counters
+    # allocate nephrologists to activities & update counters
     def __allocate__(self):
         if self.year not in self.monthly_plannings:
             self.monthly_plannings[self.year] = dict()
@@ -73,20 +71,21 @@ class GlobalPlanning():
         if self.month not in self.monthly_plannings[self.year]:
             self.monthly_plannings[self.year][self.month] = MonthlyPlanning(self.year, self.month)
 
-        existing_monthly_planning = self.monthly_plannings[self.year][self.month]
+        _monthly_planning = self.monthly_plannings[self.year][self.month]
 
+        import calendar
         for _week in calendar.monthcalendar(self.year, self.month):
-            # eliminating 0-es provided by monthcalendar...
+            # eliminating 0-es provided by calendar.monthcalendar...
             for _day in [x for x in _week if x != 0]:
                 _date = date(self.year, self.month, _day)
 
-                if _date in existing_monthly_planning:
-                    _daily_planning = existing_monthly_planning[_date]
+                if _date in _monthly_planning:
+                    _daily_planning = _monthly_planning[_date]
                 else:
                     _daily_planning = DailyPlanning(_date)
                     self.monthly_plannings[self.year][self.month] = _daily_planning
 
-                if _date not in existing_monthly_planning.daily_plannings:  # should we really eliminate these?
+                if _date not in _monthly_planning.daily_plannings:  # should we really eliminate these?
                     options = {
                         0: lambda y: usual_day(_daily_planning),  # taking care of 1st day (monday)
                         1: lambda y: usual_day(_daily_planning),  # taking care of 2nd day (tuesday)
@@ -98,8 +97,6 @@ class GlobalPlanning():
                     if index in options:
                         options[index]()
 
-        from operator import itemgetter
-
         def usual_day(__daily_planning):
             # initializing the "one activity per time slot per nephrologist throughput" watcher
             _already_allocated_id_nephrologists = {[(x, []) for x in __daily_planning]}
@@ -107,9 +104,10 @@ class GlobalPlanning():
             for _time_slot in __daily_planning:
                 # for each activity available for the current time slot that is not already allocated
                 for _activity in [y for y in __daily_planning[_time_slot] if not __daily_planning[_time_slot][y]]:
-                    # TODO: nephrologist who does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday) does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
+                    # TODO: nephrologist who does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)...
+                    # TODO: ...does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
                     # TODO: examine preferences and aversions (deal with CONSULTATION first)
-                    if _time_slot is TimeSlot.THIRD_SHIFT and _activity is Activity.OBLIGATION:
+                    if _time_slot is TimeSlot.THIRD_SHIFT and _activity in [Activity.OBLIGATION, Activity.OBLIGATION_HOLIDAY]:
                         continue  # managed elsewhere
                     # allocate current time slot/activity combo
                     else:
@@ -119,7 +117,7 @@ class GlobalPlanning():
                             if TimeSlot.THIRD_SHIFT in __daily_planning and Activity.OBLIGATION in __daily_planning[TimeSlot.THIRD_SHIFT]:
                                 __allocate__(__daily_planning, TimeSlot.THIRD_SHIFT, Activity.OBLIGATION, _already_allocated_id_nephrologists[TimeSlot.THIRD_SHIFT], _id_nephrologist)
 
-        def __allocate__(__daily_planning, __time_slot, __activity, __already_allocated_id_nephrologists, __id_nephrologist=None):
+        def __allocate__(__daily_planning, __time_slot, __activity, __busy_id_nephrologists, __id_nephrologist=None):
             # nephrologist has a minimal counter on the specific activity
             # nephrologist is not already allocated on an activity for the current time slot
             # nephrologist has clearance for specific activity
@@ -128,9 +126,11 @@ class GlobalPlanning():
                 _id_nephrologist = __id_nephrologist
                 _counter = self.counters()[__id_nephrologist]
             else:
+                from operator import itemgetter
+                from Models.nephrologist import Nephrologist
                 _id_nephrologist, _counter = min(
                     [(z, self.counters()[z]) for z in self.counters()
-                     if z not in __already_allocated_id_nephrologists
+                     if z not in __busy_id_nephrologists
                      if Activity.contains(__activity.value, Nephrologist.team[z].activities)
                      # if Nephrologist.team[z].holidays
                     ], key=itemgetter(1)[__activity]
@@ -138,7 +138,7 @@ class GlobalPlanning():
 
             if _id_nephrologist:
                 # update allocation map for specific time slot
-                __already_allocated_id_nephrologists.append(_id_nephrologist)
+                __busy_id_nephrologists.append(_id_nephrologist)
                 # allocate specific activity for specific time slot to specific nephrologist
                 __daily_planning.__allocate__(__time_slot, __activity, _id_nephrologist)
                 # update counting map
@@ -164,7 +164,7 @@ class GlobalPlanning():
             # TODO: N does OBLIGATION_WEEKEND on all SHIFTS, DAY+1
             # TODO: N does OBLIGATION_WEEKEND on all SHIFTS, DAY+2
             # TODO: N does DIALYSIS on DAY+3/FIRST_SHIFT (or OBLIGATION_HOLIDAY if DAY+3 is holiday)
-            # TODO: N earns +1 OBLIGATION_RECOVERY
+            # TODO: N earns +1 OBLIGATION_RECOVERY (to allocate during WEEK+1)
             pass
 
         return self

@@ -26,26 +26,6 @@ def singleton(cls):
 
 @singleton
 class MonthlyPlanning():
-    '''
-    time_slots_to_time_spans = {
-        TimeSlot.FIRST_SHIFT.name: Perioder(
-            _initial=timedelta(hours=5),
-            _frequency=timedelta(days=1),
-            _final=timedelta(hours=13, microseconds=-1)
-        ),
-        TimeSlot.SECOND_SHIFT.name: Perioder(
-            _initial=timedelta(hours=13),
-            _frequency=timedelta(days=1),
-            _final=timedelta(hours=21, microseconds=-1)
-        ),
-        TimeSlot.THIRD_SHIFT.name: Perioder(
-            _initial=timedelta(hours=21),
-            _frequency=timedelta(days=1),
-            _final=timedelta(days=1, hours=5, microseconds=-1)
-        )
-    }
-    '''
-
     def __init__(self, _year, _month):
         self.year = _year
         self.month = _month

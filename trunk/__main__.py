@@ -14,7 +14,7 @@ RULES = {}
 def main():
     try:
         # from Models.nephrologist import Nephrologist
-        # Database.__load__()
+        # Database.__create__()
         # Nephrologist.__load__()
         '''
         from Models.monthly_planning import MonthlyPlanning

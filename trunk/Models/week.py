@@ -104,7 +104,7 @@ class Week():
                 Activity.OBLIGATION_WEEKEND: None
             }
         },
-        KEY_SPECIAL_HOLIDAY: {
+        KEY_SPECIAL_HOLIDAY: {  # can replace DAY 0, 1, 2, 3, 4 if holiday (but never 5, 6)
             TimeSlot.FIRST_SHIFT: {
                 Activity.OBLIGATION_HOLIDAY: None
             },

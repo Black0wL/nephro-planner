@@ -6,6 +6,7 @@ from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Models.nephrologist import Nephrologist
 from Enums.activity import Activity
+from Enums.timeslot import TimeSlot
 
 
 class Database:
@@ -15,7 +16,66 @@ class Database:
     DATABASE_TABLE_MONTHLY_PLANNINGS = 'monthly_plannings'
 
     @classmethod
-    def __load__(cls):
+    def __create__(cls):
+        _nephrologists = [
+            Nephrologist(1, "Adeline", _preferences={
+                2: {  # wednesday
+                    TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
+                },
+                4: {  # friday
+                    TimeSlot.SECOND_SHIFT: [Activity.CONSULTATION]
+                }
+            }, _aversions={
+                1: {  # tuesday
+                    TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                }
+            }),
+            Nephrologist(2, "Christine", _preferences={
+                2: {  # wednesday
+                    TimeSlot.SECOND_SHIFT: [
+                        Activity.CONSULTATION,
+                        Activity.OBLIGATION_RECOVERY
+                    ]
+                },
+                3: {  # thursday
+                    TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                },
+                4: {  # friday
+                    TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
+                }
+            }, _aversions={
+                2: {  # wednesday
+                    TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                }
+            }),
+            Nephrologist(3, "Severine", _preferences={
+                0: {  # monday
+                    TimeSlot.SECOND_SHIFT: [Activity.CONSULTATION]
+                },
+                1: {  # tuesday
+                    TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                },
+                2: {  # wednesday
+                    TimeSlot.SECOND_SHIFT: [Activity.OBLIGATION_RECOVERY]
+                },
+                3: {  # thursday
+                    TimeSlot.FIRST_SHIFT: [
+                        Activity.CONSULTATION,
+                        Activity.OBLIGATION_RECOVERY
+                    ]
+                }
+            }, _aversions={
+                0: {  # monday
+                    TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                }
+            }),
+            Nephrologist(4, "Interne", _activities=[
+                Activity.NEPHROLOGY,
+                Activity.OTHERS,
+                Activity.OBLIGATION_RECOVERY
+            ])
+        ]
+
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 id_pk INTEGER NOT NULL,
@@ -29,12 +89,7 @@ class Database:
             if cursor.rowcount == 0:
                 cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
                     Database.DATABASE_TABLE_NEPHROLOGISTS
-                ), [
-                    Nephrologist(1, "Adeline"),
-                    Nephrologist(2, "Christine"),
-                    Nephrologist(3, "Severine"),
-                    Nephrologist(4, "Interne", [Activity.NEPHROLOGY])
-                ].__iter__())  # does it even work?
+                ), [((x.id, x.name) for x in _nephrologists)].__iter__())  # does it even work?
                 connection.commit()
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (

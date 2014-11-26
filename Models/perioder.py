@@ -1,6 +1,7 @@
 __author__ = "Christophe"
 
 from Utils.datetime_modulo import datetime
+from Utils.timedelta_modulo import timedelta
 from datetime import timedelta, date
 
 
@@ -11,8 +12,8 @@ class Perioder():
         @type _lower_delta: timedelta
         @param _lower_date: initial absolute time reference.
         @type _lower_date: timedelta
-        @param _period: period on which _initial.
-        @type _period: timedelta
+        @param _progressive_period: period on which _initial.
+        @type _progressive_period: timedelta
         @param _upper_delta: initial relative time reference.
         @type _upper_delta: timedelta
         @param _upper_date: initial relative time reference.
@@ -20,9 +21,19 @@ class Perioder():
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
 
-        As relative referential, we use first monday of a specific month.
+        As relative referential, we use first monday of a specific month. (note: should we keep that?)
+
+        With this class, we want to deal with multiple scenarii:
+        - date only: 2014-06-12
+        - absolute date duration: from 2014-06-12 to 2014-06-15
+        - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
+        - relative date period: every monday
+        - relative datetime period: every monday afternoon
+
+        We does not need these scenarii:
+        - datetime only
     """
-    def __init__(self, _lower_delta=None, _lower_date=None, _period=None, _upper_delta=None, _upper_date=None):
+    def __init__(self, _lower_delta=None, _lower_date=None, _progressive_period=None, _upper_delta=None, _upper_date=None):
         if _lower_delta:
             if not isinstance(_lower_delta, timedelta):
                 raise UserWarning("lower delta parameter must be of {}.".format(timedelta))
@@ -33,10 +44,10 @@ class Perioder():
                 raise UserWarning("lower date parameter must be of {}.".format(date))
         self.lower_date = _lower_date  # date NULL
 
-        if _period:
-            if not isinstance(_period, timedelta):
-                raise UserWarning("period parameter must be of {}.".format(timedelta))
-        self.period = _period  # timedelta NULL
+        if _progressive_period:
+            if not isinstance(_progressive_period, timedelta):
+                raise UserWarning("progressive period parameter must be of {}.".format(timedelta))
+        self.progressive_period = _progressive_period  # timedelta NULL
 
         if _upper_delta:
             if not isinstance(_upper_delta, timedelta):
@@ -65,40 +76,48 @@ class Perioder():
     def __expand__(self, _year, _month):
         """
 
-        :rtype : list
+        :rtype : (tuple(datetime, datetime), bool)
+        :returns : a set of periods and a flag telling whether periods are a single time lap (instead of punctual dates)
         """
         import calendar
 
-        _lower_bound = date(_year, _month, 1)
-        _upper_bound = calendar.monthrange(_year, _month)[1] + timedelta(days=1, microseconds=-1)
+        _lower_bound = datetime(_year, _month, 1)
+        _upper_bound = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
 
-        #for _week in calendar.monthcalendar(_year, _month):
-        #    for _day in [x for x in _week if x != 0]:
-        if self.lower_delta or self.upper_delta:  # self is relatively defined
-            pass
-        elif self.lower_date or self.upper_date:  # self is absolutely defined
-            if not (self.lower_delta or self.upper_delta):
-                if self.period:
-                    # converting our date to a datetime instance
-                    _current = datetime(_absolute_date.year, _absolute_date.month, _absolute_date.day)
-
-                    if self.lower_date
-
-                    while _current <= _upper_bound:
-                        if _current >= _lower_bound:
-                            yield _current
-                        _current += timedelta(
-                            days=self.period.days,
-                            seconds=self.period.seconds,
-                            microseconds=self.period.microseconds
-                        )
-                elif _lower_bound <= _absolute_date <= _upper_bound:
-                    yield _absolute_date
-            else:
-                pass
+        #
+        if self.lower_date and self.lower_date < _lower_bound:
+            _lower_date = self.lower_date
+        elif self.lower_delta:
+            _lower_date = _lower_bound + self.lower_delta
         else:
-            yield
+            _lower_date = _lower_bound
 
+        if self.upper_date:
+            if self.upper_date <= _upper_bound:
+                _upper_date = self.upper_date
+            else:
+                _upper_date = _upper_bound
+        elif self.upper_delta:
+            _upper_date = self.upper_delta
+        else:
+            _upper_date = None
+
+        _return = []
+        if self.progressive_period:
+            _current = _lower_date
+            while _current <= _upper_date:
+                if _current >= _lower_date:
+                    _return.append((_current, None))
+                _current += timedelta(
+                    days=self.progressive_period.days,
+                    seconds=self.progressive_period.seconds,
+                    microseconds=self.progressive_period.microseconds
+                )
+        else:
+            _return.append((_lower_date, _upper_date))
+
+        _return_set = set([x[1] for x in _return])
+        return _return, len(_return_set) == 1 and not list(_return_set)[0]
 
 
 

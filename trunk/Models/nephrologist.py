@@ -18,21 +18,21 @@ class Nephrologist(object):
         SECOND_SHIFT: from 13:00:00 to 20:59:59.999999
         SECOND_SHIFT: from 21:00:00 to 04:59:59.999999
     """
-    date_to_slots = {
+    slots_temporally = {
         TimeSlot.FIRST_SHIFT.name: Perioder(
-            _initial_delta=timedelta(hours=5),
-            _frequency=timedelta(days=1),
-            _final_delta=timedelta(hours=13, microseconds=-1)
+            _lower_delta=timedelta(hours=5),
+            _progressive_period=timedelta(days=1),
+            _upper_delta=timedelta(hours=13, microseconds=-1)
         ),
         TimeSlot.SECOND_SHIFT.name: Perioder(
-            _initial_delta=timedelta(hours=13),
-            _frequency=timedelta(days=1),
-            _final_delta=timedelta(hours=21, microseconds=-1)
+            _lower_delta=timedelta(hours=13),
+            _progressive_period=timedelta(days=1),
+            _upper_delta=timedelta(hours=21, microseconds=-1)
         ),
         TimeSlot.THIRD_SHIFT.name: Perioder(
-            _initial_delta=timedelta(hours=21),
-            _frequency=timedelta(days=1),
-            _final_delta=timedelta(days=1, hours=5, microseconds=-1)
+            _lower_delta=timedelta(hours=21),
+            _progressive_period=timedelta(days=1),
+            _upper_delta=timedelta(days=1, hours=5, microseconds=-1)
         )
     }
 
@@ -85,13 +85,16 @@ class Nephrologist(object):
         # contains all personal aversions that a nephrologist has to a TimeSlot and a particular activity
         self.aversions = _aversions if _aversions else {}
 
-    def __holidays_to_time_slots__(self, _month, _year):
+    def __holidays__(self, _month, _year):
         # TODO: purpose is to provide a map { day_number: [off_time_slots]} for current {year, month}
         # eliminating 0-es provided by calendar.monthcalendar...
-        for _day in [x for x in calendar.monthcalendar(_year, _month) if x != 0]:
-            for _perioder in self.holidays:
-                for _time_slot in _perioder.__expand__(_year, _month):
-                    pass
+        for _perioder in self.holidays:
+            # for _week in [x for x in calendar.monthcalendar(_year, _month)]:
+            _expansion, _is_time_lap = _perioder.__expand__(_year, _month)
+            if _is_time_lap:  # perioder is a set of dates
+                pass
+            else:
+                pass
             pass
         pass
 

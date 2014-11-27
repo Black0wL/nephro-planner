@@ -4,38 +4,16 @@ from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Utils.database import Database
 from Enums.activity import Activity
-from Enums.timeslot import TimeSlot
-from Models.perioder import Perioder
-from datetime import timedelta
+from Models.period import Period
+from Models.duration import Duration
+from datetime import date
+from Utils.datetime_extension import datetime
+from Utils.timedelta_extension import timedelta
 import sqlite3
 import calendar
 
 
 class Nephrologist(object):
-    """ mapper between discrete time slots and analogous datetime
-
-        FIRST_SHIFT: from 05:00:00 to 12:59:59.999999
-        SECOND_SHIFT: from 13:00:00 to 20:59:59.999999
-        SECOND_SHIFT: from 21:00:00 to 04:59:59.999999
-    """
-    slots_temporally = {
-        TimeSlot.FIRST_SHIFT.name: Perioder(
-            _lower_delta=timedelta(hours=5),
-            _progressive_period=timedelta(days=1),
-            _upper_delta=timedelta(hours=13, microseconds=-1)
-        ),
-        TimeSlot.SECOND_SHIFT.name: Perioder(
-            _lower_delta=timedelta(hours=13),
-            _progressive_period=timedelta(days=1),
-            _upper_delta=timedelta(hours=21, microseconds=-1)
-        ),
-        TimeSlot.THIRD_SHIFT.name: Perioder(
-            _lower_delta=timedelta(hours=21),
-            _progressive_period=timedelta(days=1),
-            _upper_delta=timedelta(days=1, hours=5, microseconds=-1)
-        )
-    }
-
     """ constructor of the class
 
         @param _id: unique identifier of a nephrologist.
@@ -87,15 +65,31 @@ class Nephrologist(object):
 
     def __holidays__(self, _month, _year):
         # TODO: purpose is to provide a map { day_number: [off_time_slots]} for current {year, month}
-        # eliminating 0-es provided by calendar.monthcalendar...
-        for _perioder in self.holidays:
+        _dates = []  # dump list of dates
+        _holidays = dict()  # map { day_number: [off_time_slots]}
+        _lowest = datetime(_year, _month, 1)
+        _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
+
+        for _blob in self.holidays:
+            # eliminating 0-es provided by calendar.monthcalendar...
             # for _week in [x for x in calendar.monthcalendar(_year, _month)]:
-            _expansion, _is_time_lap = _perioder.__expand__(_year, _month)
-            if _is_time_lap:  # perioder is a set of dates
-                pass
+            # _expansion, _is_time_lap = _perioder.__expand__(_year, _month)
+            switch = {
+                date: lambda x: _dates.append(_blob) if _lowest.date() <= _blob <= _uppest.date() else x,
+                Period: lambda x: _blob.__transform__(_year, _month),
+                Duration: lambda x: _blob.__transform__(_year, _month)
+            }
+            _type = type(_blob)
+            if _type in switch:
+                switch[_type]()
             else:
-                pass
-            pass
+                raise UserWarning("holidays contains unmanaged types.")
+        pass
+
+    def __preferences__(self, _month, _year):
+        pass
+
+    def __aversions__(self, _month, _year):
         pass
 
     def __str__(self):

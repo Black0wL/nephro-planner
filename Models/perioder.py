@@ -1,10 +1,24 @@
 __author__ = "Christophe"
 
-from Utils.datetime_modulo import datetime
-from Utils.timedelta_modulo import timedelta
-from datetime import timedelta, date
+from Utils.datetime_extension import datetime
+from Utils.timedelta_extension import timedelta
+from datetime import date
 
+"""
+    With this class, we want to deal with multiple scenarii:
+    - date only: 2014-06-12
+    - absolute date duration: from 2014-06-12 to 2014-06-15
+    - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
+    - relative date period: every monday
+    - relative datetime period: every monday afternoon
 
+    We does not need these scenarii:
+    - datetime only
+    - relative&absolute progressive date period: from 2014-06-12 every monday
+    - relative&absolute progressive datetime period: from 2014-06-12T10:00:00 every monday morning
+    - relative&absolute decreasing date period: every monday until 2014-06-15
+    - relative&absolute decreasing datetime period: every monday morning until 2014-06-15T16:00:00
+"""
 class Perioder():
     """ constructor of the class
 
@@ -20,18 +34,6 @@ class Perioder():
         @type _upper_date: timedelta
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
-
-        As relative referential, we use first monday of a specific month. (note: should we keep that?)
-
-        With this class, we want to deal with multiple scenarii:
-        - date only: 2014-06-12
-        - absolute date duration: from 2014-06-12 to 2014-06-15
-        - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
-        - relative date period: every monday
-        - relative datetime period: every monday afternoon
-
-        We does not need these scenarii:
-        - datetime only
     """
     def __init__(self, _lower_delta=None, _lower_date=None, _progressive_period=None, _upper_delta=None, _upper_date=None):
         if _lower_delta:

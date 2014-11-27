@@ -86,7 +86,7 @@ class GlobalPlanning():
                     self.monthly_plannings[self.year][self.month] = _daily_planning
 
                 if _date not in _monthly_planning.daily_plannings:  # should we really eliminate these?
-                    options = {
+                    switch = {
                         0: lambda y: usual_day(_daily_planning),  # taking care of 1st day (monday)
                         1: lambda y: usual_day(_daily_planning),  # taking care of 2nd day (tuesday)
                         2: lambda y: usual_day(_daily_planning),  # taking care of 3rd day (wednesday)
@@ -94,8 +94,8 @@ class GlobalPlanning():
                         4: lambda y: uncanny_day(_daily_planning)  # taking care of 5th day, 6th day, 7th day, and 8th day morning (friday, saturday, sunday, and next monday.FIRST_SHIFT)
                     }
                     index = _week.index(_day)
-                    if index in options:
-                        options[index]()
+                    if index in switch:
+                        switch[index]()
 
         def usual_day(__daily_planning):
             # initializing the "one activity per time slot per nephrologist throughput" watcher

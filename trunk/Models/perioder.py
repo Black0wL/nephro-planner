@@ -10,14 +10,15 @@ from datetime import date
     - absolute date duration: from 2014-06-12 to 2014-06-15
     - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
     - relative date period: every monday
-    - relative datetime period: every monday afternoon
+    - relative backward datetime period: every monday (from 00:00:00.000000) to 12:00:00
+    - relative onward datetime period: every monday since 12:00:00 (to 23:59:59.999999)
 
     We does not need these scenarii:
     - datetime only
-    - relative&absolute progressive date period: from 2014-06-12 every monday
-    - relative&absolute progressive datetime period: from 2014-06-12T10:00:00 every monday morning
-    - relative&absolute decreasing date period: every monday until 2014-06-15
-    - relative&absolute decreasing datetime period: every monday morning until 2014-06-15T16:00:00
+    - relative&absolute onward date period: from 2014-06-12 every monday
+    - relative&absolute onward datetime period: from 2014-06-12T10:00:00 every monday morning
+    - relative&absolute backward date period: every monday until 2014-06-15
+    - relative&absolute backward datetime period: every monday morning until 2014-06-15T16:00:00
 """
 class Perioder():
     """ constructor of the class
@@ -74,7 +75,6 @@ class Perioder():
         @param _month: month of the temporal focus
         @type _month: int
     """
-    # TODO: implement!
     def __expand__(self, _year, _month):
         """
 

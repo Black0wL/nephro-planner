@@ -3,44 +3,23 @@ __author__ = "Christophe"
 from Utils.timedelta_extension import timedelta
 from Utils.datetime_extension import datetime
 from Enums.timeslot import TimeSlot
+from Utils.constants import Constants
 import calendar
 
 
 class Period():
-    FIRST_SHIFT_LOWER_BOUND = 5
-    SECOND_SHIFT_LOWER_BOUND = 13
-    THIRD_SHIFT_LOWER_BOUND = 21
-    """ mapper between discrete time slots and analogous datetime
-
-        FIRST_SHIFT: from 05:00:00 to 12:59:59.999999
-        SECOND_SHIFT: from 13:00:00 to 20:59:59.999999
-        SECOND_SHIFT: from 21:00:00 to 04:59:59.999999
-    """
-    slots_temporally = {
-        TimeSlot.FIRST_SHIFT: (
-            timedelta(hours=FIRST_SHIFT_LOWER_BOUND),
-            timedelta(hours=SECOND_SHIFT_LOWER_BOUND, microseconds=-1)
-        ),
-        TimeSlot.SECOND_SHIFT: (
-            timedelta(hours=SECOND_SHIFT_LOWER_BOUND),
-            timedelta(hours=THIRD_SHIFT_LOWER_BOUND, microseconds=-1)
-        ),
-        TimeSlot.THIRD_SHIFT: (
-            timedelta(hours=THIRD_SHIFT_LOWER_BOUND),
-            timedelta(days=1, hours=FIRST_SHIFT_LOWER_BOUND, microseconds=-1)
-        )
-    }
-
     """ constructor of the class
 
         @param _offset: relative positive offset from first monday of a specific month.
         @type _offset: timedelta
         @param _progressive_period: positive period.
         @type _progressive_period: timedelta
+        @param _onward: tells whether .
+        @type _onward: bool
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
     """
-    def __init__(self, _offset, _progressive_period):
+    def __init__(self, _offset, _progressive_period, _onward=True):
         if _offset:
             if not isinstance(_offset, timedelta):
                 raise UserWarning("offset parameter must be of {}.".format(timedelta))
@@ -55,15 +34,21 @@ class Period():
                 raise UserWarning("period parameter must be strictly positive.")
         self.progressive_period = _progressive_period  # timedelta NULL
 
-    # TODO: implement
+        if _onward:
+            if not isinstance(_onward, bool):
+                raise UserWarning("onward parameter must be of {}.".format(bool))
+            self.onward = _onward
+        else:
+            self.onward = False
+
     def __transform__(self, _year, _month):
         _lowest = datetime(_year, _month, 1)
         if self.offset:
             _lowest += self.offset
         _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
         _datetimes = []
-        _current = _lowest  # initialization
 
+        _current = _lowest  # initialization
         if self.progressive_period:
             while _lowest <= _current <= _uppest:
                 _datetimes.append(_current)
@@ -74,19 +59,24 @@ class Period():
         for _day in [y for _week in calendar.monthcalendar(_year, _month) for y in _week if y != 0]:
             _referential = datetime(_year, _month, _day)
             for _datetime in _datetimes:
-                if not _datetime.time():  # holiday is all day
-                    yield {
-                        _day: TimeSlot.flags()
-                    }
-                    continue
-                else:
-                    _fragment = {_day: []}
-                    for _time_slot, _lower in [(x, y) for x in Period.slots_temporally for (y, z) in Period.slots_temporally[TimeSlot.FIRST_SHIFT]]:
-                        if _referential + _lower <= _datetime:
-                            _fragment[_day].append(_time_slot)
-
-                    if _fragment[_day]:
-                        yield _fragment[_day]
+                if _datetime.date() == _referential.date():
+                    if not _datetime.time():
+                        yield {
+                            _day: TimeSlot.flags()  # all day included
+                        }
+                        continue
+                    else:
+                        _fragment = {_day: []}
+                        for _time_slot in Constants.slots_temporally:
+                            _lower, _upper = Constants.slots_temporally[_time_slot]
+                            if self.onward:  # all time slot AFTER _datetime are included
+                                if _referential + _lower >= _datetime:  # started slot are earned
+                                    _fragment[_day].append(_time_slot)
+                            else:  # all time slot BEFORE _datetime are included
+                                if _referential + _upper <= _datetime:
+                                    _fragment[_day].append(_time_slot)
+                        if _fragment[_day]:
+                            yield _fragment[_day]
 
 
 

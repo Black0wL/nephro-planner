@@ -4,6 +4,7 @@ from Utils.datetime_extension import datetime
 from Utils.timedelta_extension import timedelta
 from datetime import date
 
+
 """
     With this class, we want to deal with multiple scenarii:
     - date only: 2014-06-12
@@ -20,6 +21,8 @@ from datetime import date
     - relative&absolute backward date period: every monday until 2014-06-15
     - relative&absolute backward datetime period: every monday morning until 2014-06-15T16:00:00
 """
+
+
 class Perioder():
     """ constructor of the class
 

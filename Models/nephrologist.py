@@ -4,6 +4,7 @@ from Utils.parameters import Parameters
 from Utils.constants import Constants
 from Utils.database import Database
 from Enums.activity import Activity
+from Enums.timeslot import TimeSlot
 from Models.period import Period
 from Models.duration import Duration
 from datetime import date
@@ -38,6 +39,7 @@ class Nephrologist(object):
 
         if not _name:
             raise UserWarning("name can not be None.")
+
         elif not isinstance(_name, str):
             raise UserWarning("name must be of type {}".format(str))
         self.name = _name
@@ -64,33 +66,50 @@ class Nephrologist(object):
         self.aversions = _aversions if _aversions else {}
 
     def __holidays__(self, _month, _year):
-        # TODO: purpose is to provide a map { day_number: [off_time_slots]} for current {year, month}
-        _dates = []  # dump list of dates
-        _holidays = dict()  # map { day_number: [off_time_slots]}
+        _dump = dict()  # map { day_number: [off_time_slots]}
         _lowest = datetime(_year, _month, 1)
         _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
 
         for _blob in self.holidays:
-            # eliminating 0-es provided by calendar.monthcalendar...
-            # for _week in [x for x in calendar.monthcalendar(_year, _month)]:
-            # _expansion, _is_time_lap = _perioder.__expand__(_year, _month)
             switch = {
-                date: lambda x: _dates.append(_blob) if _lowest.date() <= _blob <= _uppest.date() else x,
-                Period: lambda x: _blob.__transform__(_year, _month),
-                Duration: lambda x: _blob.__transform__(_year, _month)
+                date: lambda: {_blob.day: TimeSlot.flags()}  if _lowest.date() <= _blob <= _uppest.date() else [],
+                Period: lambda: _blob.__transform__(_year, _month),
+                Duration: lambda: _blob.__transform__(_year, _month)
             }
             _type = type(_blob)
+            # TODO: refactor dat shit?!
             if _type in switch:
-                switch[_type]()
+                _slots = switch[_type]()
+
+                _keyset = set()
+                for _day_slot in _slots:
+                    _keyset |= _day_slot
+
+                for _day in list(_keyset):
+                    _dump[_day] = set()
+                    for _slot in [(_slots[x][_day] if _day in _slots[x] else []) for x in _slots]:
+                        _dump[_day] |= set(_slot)
+                    _dump[_day] = list(_dump[_day])
             else:
-                raise UserWarning("holidays contains unmanaged types.")
-        pass
+                raise UserWarning("days/slots dump contains unmanaged types.")
+        return _dump
 
     def __preferences__(self, _month, _year):
-        pass
+        Nephrologist.__compute_days_slots_activities_map__(_month, _year, self.preferences)
 
     def __aversions__(self, _month, _year):
-        pass
+        Nephrologist.__compute_days_slots_activities_map__(_month, _year, self.aversions)
+
+    @classmethod
+    def __compute_days_slots_activities_map__(cls, _month, _year, _research_dump):
+        _dump = {}
+        # eliminating 0-es provided by calendar.monthcalendar...
+        for _day in [y for x in calendar.monthcalendar(_year, _month) for y in x if y != 0]:
+            _date = date(_year, _month, _day)
+            _index = _date.weekday()
+            if _index in _research_dump:
+                _dump[_day] = _research_dump[_index]
+        return _dump
 
     def __str__(self):
         return super(self)
@@ -99,7 +118,7 @@ class Nephrologist(object):
         return self.__str__()
 
     # TODO: load activities, holidays, preferences from DB
-    @property
+    @classmethod
     def team(cls):
         if not cls._team:
             cls._team = {}

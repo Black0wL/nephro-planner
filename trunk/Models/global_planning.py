@@ -1,6 +1,7 @@
 __author__ = "Christophe"
 
 from datetime import datetime, date
+from Models.nephrologist import Nephrologist
 from monthly_planning import MonthlyPlanning
 from daily_planning import DailyPlanning
 from Enums.timeslot import TimeSlot
@@ -73,6 +74,10 @@ class GlobalPlanning():
 
         _monthly_planning = self.monthly_plannings[self.year][self.month]
 
+        _holidays = dict([(x, Nephrologist.team()[x].__holidays__(self.month, self.year)) for x in Nephrologist.team()])
+        _preferences = dict([(x, Nephrologist.team()[x].__preferences__(self.month, self.year)) for x in Nephrologist.team()])
+        _aversions = dict([(x, Nephrologist.team()[x].__aversions__(self.month, self.year)) for x in Nephrologist.team()])
+
         import calendar
         for _week in calendar.monthcalendar(self.year, self.month):
             # eliminating 0-es provided by calendar.monthcalendar...
@@ -87,11 +92,11 @@ class GlobalPlanning():
 
                 if _date not in _monthly_planning.daily_plannings:  # should we really eliminate these?
                     switch = {
-                        0: lambda y: usual_day(_daily_planning),  # taking care of 1st day (monday)
-                        1: lambda y: usual_day(_daily_planning),  # taking care of 2nd day (tuesday)
-                        2: lambda y: usual_day(_daily_planning),  # taking care of 3rd day (wednesday)
-                        3: lambda y: usual_day(_daily_planning),  # taking care of 4th day (thursday)
-                        4: lambda y: uncanny_day(_daily_planning)  # taking care of 5th day, 6th day, 7th day, and 8th day morning (friday, saturday, sunday, and next monday.FIRST_SHIFT)
+                        0: lambda: usual_day(_daily_planning),  # taking care of 1st day (monday)
+                        1: lambda: usual_day(_daily_planning),  # taking care of 2nd day (tuesday)
+                        2: lambda: usual_day(_daily_planning),  # taking care of 3rd day (wednesday)
+                        3: lambda: usual_day(_daily_planning),  # taking care of 4th day (thursday)
+                        4: lambda: uncanny_day(_daily_planning)  # taking care of 5th day, 6th day, 7th day, and 8th day morning (friday, saturday, sunday, and next monday.FIRST_SHIFT)
                     }
                     index = _week.index(_day)
                     if index in switch:
@@ -101,40 +106,60 @@ class GlobalPlanning():
             # initializing the "one activity per time slot per nephrologist throughput" watcher
             _already_allocated_id_nephrologists = {[(x, []) for x in __daily_planning]}
             # for each time slot of the daily planning that are authorized to be allocated
+            # TODO: examine preferences and aversions before (deal with CONSULTATION first)
+
+
+            """
+                Allocate time slot/activity combos following a very specific order:
+                - manage aversions and preferences combo first (if clash on that step, stop: too much subjective constraints)
+                - deal with the rest
+                That way:
+                - Nephrologist will be allocated busy unfrustrated
+                - Rule: "CONSULTATION > DIALYSIS" following an OBLIGATION[_HOLIDAY] will be managed seamlessly
+            """
+
+
             for _time_slot in __daily_planning:
                 # for each activity available for the current time slot that is not already allocated
                 for _activity in [y for y in __daily_planning[_time_slot] if not __daily_planning[_time_slot][y]]:
-                    # TODO: nephrologist who does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)...
-                    # TODO: ...does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
-                    # TODO: examine preferences and aversions (deal with CONSULTATION first)
-                    if _time_slot is TimeSlot.THIRD_SHIFT and _activity in [Activity.OBLIGATION, Activity.OBLIGATION_HOLIDAY]:
-                        continue  # managed elsewhere
-                    # allocate current time slot/activity combo
-                    else:
-                        _id_nephrologist = __allocate__(__daily_planning, _time_slot, _activity, _already_allocated_id_nephrologists[_time_slot])
+                    # nephrologist who does DIALYSIS on SECOND_SHIFT does OBLIGATION on THIRD_SHIFT
 
-                        if _time_slot is TimeSlot.SECOND_SHIFT and _activity is Activity.DIALYSIS:
-                            if TimeSlot.THIRD_SHIFT in __daily_planning and Activity.OBLIGATION in __daily_planning[TimeSlot.THIRD_SHIFT]:
-                                __allocate__(__daily_planning, TimeSlot.THIRD_SHIFT, Activity.OBLIGATION, _already_allocated_id_nephrologists[TimeSlot.THIRD_SHIFT], _id_nephrologist)
+                    # allocate current time slot/activity combo
+                    _id_nephrologist = __allocate__(__daily_planning, _time_slot, _activity, _already_allocated_id_nephrologists[_time_slot])
+                    if _time_slot is TimeSlot.SECOND_SHIFT and _activity is Activity.DIALYSIS:
+                        if TimeSlot.THIRD_SHIFT in __daily_planning and Activity.OBLIGATION in __daily_planning[TimeSlot.THIRD_SHIFT]:
+                            __allocate__(__daily_planning, TimeSlot.THIRD_SHIFT, Activity.OBLIGATION, _already_allocated_id_nephrologists[TimeSlot.THIRD_SHIFT], _id_nephrologist)
 
         def __allocate__(__daily_planning, __time_slot, __activity, __busy_id_nephrologists, __id_nephrologist=None):
             # nephrologist has a minimal counter on the specific activity
             # nephrologist is not already allocated on an activity for the current time slot
             # nephrologist has clearance for specific activity
-            # TODO: nephrologist is on a working day
+            # nephrologist is not on holiday
             if __id_nephrologist:
                 _id_nephrologist = __id_nephrologist
                 _counter = self.counters()[__id_nephrologist]
             else:
+                """
+                    # of course, None nephrologist will have a time slot/activity expected both in preferences and aversions specifications
+                    # if nephrologist has specified an aversion for the time slot/activity combo...
+                    if __time_slot in _aversions[z] and __activity in _aversions[z][__time_slot]:
+                        # ...if another nephrologist has a preference for this combo,
+                        for y in [x for x in _preferences if __time_slot in _preferences[x] and __activity in _preferences[x][__time_slot]]:
+                            continue
+                """
+
+                _possibles = []
+                for z in self.counters():
+                    if z in __busy_id_nephrologists:
+                        continue
+                    if not Activity.contains(__activity.value, Nephrologist.team()[z].activities):
+                        continue
+                    if _holidays[z] and _daily_planning.date.day in _holidays[z] and __time_slot in _holidays[z][_daily_planning.date.day]:
+                        continue
+                    _possibles.append((z, self.counters()[z]))
+
                 from operator import itemgetter
-                from Models.nephrologist import Nephrologist
-                _id_nephrologist, _counter = min(
-                    [(z, self.counters()[z]) for z in self.counters()
-                     if z not in __busy_id_nephrologists
-                     if Activity.contains(__activity.value, Nephrologist.team[z].activities)
-                     # if Nephrologist.team[z].holidays
-                    ], key=itemgetter(1)[__activity]
-                )
+                _id_nephrologist, _counter = min(_possibles, key=itemgetter(1)[__activity])
 
             if _id_nephrologist:
                 # update allocation map for specific time slot

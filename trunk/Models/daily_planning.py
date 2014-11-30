@@ -27,18 +27,14 @@ class DailyPlanning():
 
         # if required, _calendar.is_working_day can deal with extra working days/holidays
         _is_working_day = France().is_working_day(_date)
-        for _week in calendar.monthcalendar(_date.year, _date.month):
-            if _date.day in _week:
-                _index = _week.index(_date.day)
-                # normal working day if no holiday or if weekend day
-                # tip: holiday during weekend are considered as normal weekend working day
-                if _is_working_day or _index in [5, 6]:
-                    self.profile = copy.deepcopy(Week.SLOTS[_index])
-                # unusual working day if holiday
-                else:
-                    self.profile = copy.deepcopy(Week.SLOTS[Week.KEY_SPECIAL_HOLIDAY])
-            else:
-                continue
+        _index = _date.weekday()
+        # normal working day if no holiday or if weekend day
+        # tip: holiday during weekend are considered as normal weekend working day
+        if _is_working_day or _index in [5, 6]:
+            self.profile = copy.deepcopy(Week.SLOTS[_index])
+        # unusual working day if holiday
+        else:
+            self.profile = copy.deepcopy(Week.SLOTS[Week.KEY_SPECIAL_HOLIDAY])
 
         if not self.profile:
             raise UserWarning("daily planning's profile has not been successfully resolved.")
@@ -81,7 +77,7 @@ class DailyPlanning():
         if _reset:
             self._counters = None
         if not self._counters:
-            self._counters = dict([(x, Counter()) for x in Nephrologist.team])  # creating a new counters profile for each nephrologist
+            self._counters = dict([(x, Counter()) for x in Nephrologist.team()])  # creating a new counters profile for each nephrologist
             for (_id_nephrologist, _activity_type) in [(z, y) for x in self.profile for y in self.profile[x] for z in self.profile[x][y]]:
                 self._counters[_id_nephrologist][_activity_type] += 1
         return self._counters

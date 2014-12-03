@@ -1,0 +1,12 @@
+Install in order the following resources:
+- enum34-1.0.3
+- python-constraint-1.2.zip
+- PyYAML-3.11.zip
+- xlwt-master.zip
+- workalendar-master.zip
+- ez_setup.py
+- ephem-3.7.5.3.win-amd64-py2.7.exe
+- pytz-2014.10.zip
+- python-dateutil-2.3.tar.gz
+- lunardate-0.1.5.tar.gz
+- pyCalverter-1.6.1.tar.gz

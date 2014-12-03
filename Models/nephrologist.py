@@ -30,7 +30,7 @@ class Nephrologist(object):
         @param _aversions: preferred not time slot/activity combination for a nephrologist
         @type _aversions: dict
     """
-    def __init__(self, _id, _name, _activities=Activity.highest(), _holidays=None, _preferences=None, _aversions=None):
+    def __init__(self, _id, _name, _activities=Activity.flags(), _holidays=None, _preferences=None, _aversions=None):
         if not _id:
             raise UserWarning("id can not be None.")
         elif not isinstance(_id, int):
@@ -112,10 +112,7 @@ class Nephrologist(object):
         return _dump
 
     def __str__(self):
-        return super(self)
-
-    def __repr__(self):
-        return self.__str__()
+        return self.name[0]
 
     # TODO: load activities, holidays, preferences from DB
     @classmethod

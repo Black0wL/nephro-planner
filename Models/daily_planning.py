@@ -1,6 +1,5 @@
 __author__ = "Christophe"
 
-import calendar
 from week import Week
 from workalendar.europe import France
 from Enums.activity import Activity
@@ -71,6 +70,29 @@ class DailyPlanning():
                 # TODO: detect whether time slot for activity is already allocated!
                 self.profile[_time_slot_type.name][_activity_type.name] = _id_nephrologist
         return self
+
+    def __str__(self):
+        from Utils.database import Database
+        import re
+
+        def render_enum(flag, id_nephrologist):
+            m = re.search('(?<=_)\w+', flag.name)
+            r = flag.name[0]
+            n = None
+
+            if id_nephrologist:
+                for nephrologist in [x for x in Database.__team__() if x.id == id_nephrologist]:
+                    n = nephrologist.name[0]
+                    break
+
+            return (r + flag.name[1:3].lower() if not m else m.group(0)[0]) + ("({})".format(n if n else "_"))
+
+        render = str(self.date) + ": "
+        for timeslot in self.profile:
+            render += timeslot.name[0] + ":"
+            render += "|".join([render_enum(activity, self.profile[timeslot][activity]) for activity in self.profile[timeslot]])
+            render += " "
+        return render
 
     @property
     def counters(self, _reset=False):  # basically inverse the day profile, eluding time slots on the run

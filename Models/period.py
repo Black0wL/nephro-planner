@@ -42,6 +42,7 @@ class Period():
             self.onward = False
 
     def __transform__(self, _year, _month):
+        _map = dict()  # map { day_number: [off_time_slots]}
         _lowest = datetime(_year, _month, 1)
         if self.offset:
             _lowest += self.offset
@@ -56,15 +57,12 @@ class Period():
         else:
             _datetimes.append(_current)
 
-        for _day in [y for _week in calendar.monthcalendar(_year, _month) for y in _week if y != 0]:
+        for _day in range(_lowest.day, _uppest.day + 1):
             _referential = datetime(_year, _month, _day)
             for _datetime in _datetimes:
                 if _datetime.date() == _referential.date():
                     if not _datetime.time():
-                        yield {
-                            _day: TimeSlot.flags()  # all day included
-                        }
-                        continue
+                        _map[_day] = TimeSlot.flags()  # all day included
                     else:
                         _fragment = {_day: []}
                         for _time_slot in Constants.slots_temporally:
@@ -76,7 +74,8 @@ class Period():
                                 if _referential + _upper <= _datetime:
                                     _fragment[_day].append(_time_slot)
                         if _fragment[_day]:
-                            yield _fragment[_day]
+                            _map[_day] = _fragment[_day]
+        return _map
 
 
 

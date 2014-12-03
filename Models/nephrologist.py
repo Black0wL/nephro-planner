@@ -8,8 +8,8 @@ from Enums.timeslot import TimeSlot
 from Models.period import Period
 from Models.duration import Duration
 from datetime import date
-from Utils.datetime_extension import datetime
-from Utils.timedelta_extension import timedelta
+from datetime import datetime, timedelta
+from collections import Counter
 import sqlite3
 import calendar
 
@@ -31,6 +31,8 @@ class Nephrologist(object):
         @type _aversions: dict
     """
     def __init__(self, _id, _name, _activities=Activity.flags(), _holidays=None, _preferences=None, _aversions=None):
+        self.counters = Counter()
+
         if not _id:
             raise UserWarning("id can not be None.")
         elif not isinstance(_id, int):
@@ -66,33 +68,27 @@ class Nephrologist(object):
         self.aversions = _aversions if _aversions else {}
 
     def __holidays__(self, _month, _year):
-        _dump = dict()  # map { day_number: [off_time_slots]}
+        _map = dict()  # map { day_number: [off_time_slots]}
         _lowest = datetime(_year, _month, 1)
         _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
 
         for _blob in self.holidays:
             switch = {
-                date: lambda: {_blob.day: TimeSlot.flags()}  if _lowest.date() <= _blob <= _uppest.date() else [],
+                date: lambda: {_blob.day: TimeSlot.flags()} if _lowest.date() <= _blob <= _uppest.date() else [],
                 Period: lambda: _blob.__transform__(_year, _month),
                 Duration: lambda: _blob.__transform__(_year, _month)
             }
-            _type = type(_blob)
-            # TODO: refactor dat shit?!
-            if _type in switch:
-                _slots = switch[_type]()
+            fuse = [(x, isinstance(_blob, x)) for x in switch]
+            if any([x[1] for x in fuse]):
+                _slots = switch[[x[0] for x in fuse if x[1]][0]]()
 
-                _keyset = set()
-                for _day_slot in _slots:
-                    _keyset |= _day_slot
-
-                for _day in list(_keyset):
-                    _dump[_day] = set()
-                    for _slot in [(_slots[x][_day] if _day in _slots[x] else []) for x in _slots]:
-                        _dump[_day] |= set(_slot)
-                    _dump[_day] = list(_dump[_day])
+                for day_slot in _slots:
+                    if day_slot not in _map:
+                        _map[day_slot] = set()
+                    _map[day_slot] |= set(_slots[day_slot])
             else:
                 raise UserWarning("days/slots dump contains unmanaged types.")
-        return _dump
+        return dict([(x, list(_map[x])) for x in _map])
 
     def __preferences__(self, _month, _year):
         Nephrologist.__compute_days_slots_activities_map__(_month, _year, self.preferences)

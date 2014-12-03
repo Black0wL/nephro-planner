@@ -5,6 +5,7 @@ from workalendar.europe import France
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 from Models.nephrologist import Nephrologist
+from Utils.database import Database
 from collections import Counter
 import copy
 
@@ -81,7 +82,7 @@ class DailyPlanning():
             n = None
 
             if id_nephrologist:
-                for nephrologist in [x for x in Database.__team__() if x.id == id_nephrologist]:
+                for nephrologist in [x for x in Database.team() if x.id == id_nephrologist]:
                     n = nephrologist.name[0]
                     break
 
@@ -99,7 +100,8 @@ class DailyPlanning():
         if _reset:
             self._counters = None
         if not self._counters:
-            self._counters = dict([(x, Counter()) for x in Nephrologist.team()])  # creating a new counters profile for each nephrologist
+            # TODO: call Nephrologist.team() instead of Database.team()
+            self._counters = dict([(x, Counter()) for x in Database.team()])  # creating a new counters profile for each nephrologist
             for (_id_nephrologist, _activity_type) in [(z, y) for x in self.profile for y in self.profile[x] for z in self.profile[x][y]]:
                 self._counters[_id_nephrologist][_activity_type] += 1
         return self._counters

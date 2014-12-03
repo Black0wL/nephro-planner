@@ -49,7 +49,7 @@ class Week():
                 Activity.OTHERS: None
             },
             TimeSlot.THIRD_SHIFT: {
-                Activity.OBLIGATION.name: None
+                Activity.OBLIGATION: None
             }
         },
         3: {

@@ -1,7 +1,6 @@
 __author__ = "Christophe"
 
 from Enums.timeslot import TimeSlot
-from Models.timespan import TimeSpan
 from Models.daily_planning import DailyPlanning
 import sqlite3
 from Utils.parameters import Parameters
@@ -29,7 +28,9 @@ class MonthlyPlanning():
     def __init__(self, _year, _month):
         self.year = _year
         self.month = _month
+        self.daily_plannings = dict()
 
+        """
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
 
@@ -58,6 +59,10 @@ class MonthlyPlanning():
                     row[2],
                     row[3]
                 )
+        """
+
+    def __str__(self):
+        return "\n".join([str(self.daily_plannings[daily_planning]) for daily_planning in sorted(self.daily_plannings)])
 
     @property
     def counters(self, _reset=False):

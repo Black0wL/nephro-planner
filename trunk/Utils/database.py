@@ -1,10 +1,6 @@
 __author__ = "Christophe"
 
 
-import sqlite3
-from Utils.parameters import Parameters
-from Utils.constants import Constants
-from Models.nephrologist import Nephrologist
 from Models.perioder import Perioder
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
@@ -17,8 +13,9 @@ class Database:
     DATABASE_TABLE_MONTHLY_PLANNINGS = 'monthly_plannings'
 
     @classmethod
-    def __create__(cls):
-        _nephrologists = [
+    def __team__(cls):
+        from Models.nephrologist import Nephrologist
+        return [
             Nephrologist(1, "Adeline", _preferences={
                 2: {  # wednesday
                     TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
@@ -79,6 +76,8 @@ class Database:
             ])
         ]
 
+    @classmethod
+    def __create__(cls):
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (
                 id_pk INTEGER NOT NULL,
@@ -92,7 +91,7 @@ class Database:
             if cursor.rowcount == 0:
                 cursor.executemany('INSERT INTO {}(id_pk, name) VALUES (?,?)'.format(
                     Database.DATABASE_TABLE_NEPHROLOGISTS
-                ), [((x.id, x.name) for x in _nephrologists)].__iter__())  # does it even work?
+                ), [((x.id, x.name) for x in cls.__team__())].__iter__())  # does it even work?
                 connection.commit()
 
             connection.execute('''CREATE TABLE IF NOT EXISTS {} (

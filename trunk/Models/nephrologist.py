@@ -29,10 +29,10 @@ class Nephrologist(object):
         @type _preferences: dict
         @param _aversions: preferred not time slot/activity combination for a nephrologist
         @type _aversions: dict
+        @param _counters: initial counter of the nephrologist
+        @type _counters: Counter
     """
-    def __init__(self, _id, _name, _activities=Activity.flags(), _holidays=None, _preferences=None, _aversions=None):
-        self.counters = Counter()
-
+    def __init__(self, _id, _name, _activities=Activity.flags(), _holidays=None, _preferences=None, _aversions=None, _counters=None):
         if not _id:
             raise UserWarning("id can not be None.")
         elif not isinstance(_id, int):
@@ -66,6 +66,10 @@ class Nephrologist(object):
             raise UserWarning("aversions should be of type {}".format(dict))
         # contains all personal aversions that a nephrologist has to a TimeSlot and a particular activity
         self.aversions = _aversions if _aversions else {}
+
+        if _counters and not isinstance(_counters, Counter):
+            raise UserWarning("counters must be of type {}".format(Counter))
+        self.counters = _counters if _counters else Counter()
 
     def __holidays__(self, _month, _year):
         _map = dict()  # map { day_number: [off_time_slots]}

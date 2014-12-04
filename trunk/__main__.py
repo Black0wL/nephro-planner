@@ -34,12 +34,9 @@ def main():
         # print(month_planning)
 
         holidays = dict()
-        for id in Database.team():
-        holidays = Database.team()[2].__holidays__(month, year)
-        for day in holidays:
-            print(str(day) + "|" + str(holidays[day]))
+        for x in Database.team():
+            holidays[x.id] = x.__holidays__(month, year)
 
-        problem = Problem()
         """
         problem.addVariables(
             [str(x) for x in sorted(month_planning.daily_plannings)],
@@ -58,44 +55,86 @@ def main():
         """
 
         current_date = date(year, month, 1)
-        current_weekday = current_date.weekday()
         current_timeslot = TimeSlot.FIRST_SHIFT
-        allocated = []
-        test = month_planning.daily_plannings[current_date].profile[current_timeslot]
-        test_key = (month_planning.daily_plannings[current_date], current_timeslot)
+
+        activity_key = "a"
+        nephrologist_key = "n"
+
+        problem = Problem()
+        current_weekday = current_date.weekday()
+        current_preferences = dict([(x.id, x.preferences[current_weekday][current_timeslot]) for x in Database.team() if current_weekday in x.preferences and current_timeslot in x.preferences[current_weekday]])
+        current_allocated = []
+        current_daily_planning = month_planning.daily_plannings[current_date]
+        current_activities = current_daily_planning.profile[current_timeslot]
 
         def func(act, nep):
             verdict = True
+            # activity or nephrologist are already allocated
+            if act in [x[0] for x in current_allocated if x[1] != nep] or nep in [x[1] for x in current_allocated if x[0] != act]:
+                return False
             # nephrologist has clearance for specific activity
             verdict &= act in nep.activities
-            # nephrologist has no aversions for specific activity
-            if current_weekday in nep.aversions and current_timeslot in nep.aversions[current_weekday]:
-                verdict &= act not in nep.aversions[current_weekday][current_timeslot]
-
-            """
-            # nephrologist is free
-            verdict &= (act, nep) not in [(x[2], x[3]) for x in allocated]
+            # nephrologist is not in holiday
+            if nep.id in holidays and current_date.day in holidays[nep.id] and current_timeslot in holidays[nep.id][current_date.day]:
+                return False
+            # nephrologist has a preference for the specific activity: shortcuts further checks
+            if not (verdict and nep.id in current_preferences and current_timeslot in current_preferences[nep.id] and act in current_preferences[nep.id][current_timeslot]):
+                # nephrologist has no aversions for specific activity
+                if current_weekday in nep.aversions and current_timeslot in nep.aversions[current_weekday]:
+                    verdict &= act not in nep.aversions[current_weekday][current_timeslot]
+                # nephrologist has minimum counter for the specific activity
+                if act in nep.counters:
+                    verdict &= nep.counters[act] == min([x.counters[act] for x in Database.team() if act in x.counters])
+            # conclude
             if verdict:
-                allocated.append((current_date, current_timeslot, act, nep))
-            """
+                current_allocated.append((act, nep))
             return verdict
 
         problem.addVariable(
-            test_key,
-            [activity for activity in test]
+            activity_key,
+            [x for x in current_activities]
         )
         problem.addVariable(
-            "t",
+            nephrologist_key,
             [x for x in Database.team()]
         )
-        problem.addConstraint(AllDifferentConstraint())
-        problem.addConstraint(FunctionConstraint(func), (test_key, "t"))
-        """
-        for solution in problem.getSolutions():
-            print(solution)
-        """
+        problem.addConstraint(FunctionConstraint(func), ("a", nephrologist_key))
+
+        solutions = problem.getSolutions()
+        if len(solutions) == 0:
+            print("[WARNING] allocation failed to allocate any slots.")
+        elif len(solutions) < len(current_activities):
+            print("[WARNING] allocation failed to allocate all slots.")
+        elif len(solutions) > len(current_activities):
+            print("[WARNING] allocation allocated too many slots.")
+        else:
+            for solution in solutions:
+                print(solution[nephrologist_key])
+                current_daily_planning.profile[current_timeslot][solution[activity_key]] = solution[nephrologist_key]
+            print(current_daily_planning)
     finally:
         pass
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

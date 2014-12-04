@@ -2,6 +2,7 @@ __author__ = "Christophe"
 
 
 from Models.period import Period
+from collections import Counter
 from timedelta_extension import timedelta
 from datetime import date
 from Enums.activity import Activity
@@ -18,12 +19,16 @@ class Database:
     DATABASE_TABLE_NEPHROLOGISTS_PREFERENCES = 'nephrologists_preferences'
     DATABASE_TABLE_MONTHLY_PLANNINGS = 'monthly_plannings'
 
+    # TODO: check if not same activity/time slot combo in aversions and preferences on the same time...
     @classmethod
     def team(cls):
         from Models.nephrologist import Nephrologist
         if not Database._team:
             _team = [
                 Nephrologist(1, "Adeline", _preferences={
+                    0: {  # monday
+                        TimeSlot.FIRST_SHIFT: [Activity.NEPHROLOGY]
+                    },  # TODO: delete
                     2: {  # wednesday
                         TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
                     },
@@ -34,7 +39,11 @@ class Database:
                     1: {  # tuesday
                         TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
                     }
-                }),
+                }, _holidays=[
+                ], _counters=Counter({
+                    Activity.OBLIGATION: 13,
+                    Activity.NEPHROLOGY: 17
+                })),
                 Nephrologist(2, "Christine", _preferences={
                     2: {  # wednesday
                         TimeSlot.SECOND_SHIFT: [
@@ -52,7 +61,10 @@ class Database:
                     2: {  # wednesday
                         TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
                     }
-                }),
+                }, _counters=Counter({
+                    Activity.OBLIGATION: 9,
+                    Activity.NEPHROLOGY: 10
+                })),
                 Nephrologist(3, "Severine", _preferences={
                     0: {  # monday
                         TimeSlot.SECOND_SHIFT: [Activity.CONSULTATION]
@@ -74,7 +86,6 @@ class Database:
                         TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
                     }
                 }, _holidays=[
-                    date(2014, 12, 1),
                     date(2014, 12, 7),
                     Period(timedelta(days=10), timedelta(days=7, hours=10)),
                     date(2014, 12, 5)
@@ -83,6 +94,8 @@ class Database:
                     Activity.NEPHROLOGY,
                     Activity.OTHERS,
                     Activity.OBLIGATION_RECOVERY
+                ], _holidays=[
+                    date(2014, 12, 1)
                 ])
             ]
         return _team

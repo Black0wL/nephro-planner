@@ -73,20 +73,12 @@ class DailyPlanning():
         return self
 
     def __str__(self):
-        from Utils.database import Database
         import re
 
-        def render_enum(flag, id_nephrologist):
+        def render_enum(flag, nephrologist):
             m = re.search('(?<=_)\w+', flag.name)
             r = flag.name[0]
-            n = None
-
-            if id_nephrologist:
-                for nephrologist in [x for x in Database.team() if x.id == id_nephrologist]:
-                    n = nephrologist.name[0]
-                    break
-
-            return (r + flag.name[1:3].lower() if not m else m.group(0)[0]) + ("({})".format(n if n else "_"))
+            return (r + flag.name[1:3].lower() if not m else m.group(0)[0]) + ("({})".format(nephrologist if nephrologist else "_"))
 
         render = str(self.date) + ": "
         for timeslot in self.profile:

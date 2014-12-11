@@ -94,6 +94,16 @@ class Nephrologist(object):
                 raise UserWarning("days/slots dump contains unmanaged types.")
         return dict([(x, list(_map[x])) for x in _map])
 
+
+    @classmethod
+    # TODO: use team() instead of Database.team()!
+    def __get__(cls, nephrologist_id):
+        candidate = [x for x in Database.team() if x.id == nephrologist_id]
+        if len(candidate) == 0:
+            raise UserWarning("nephrologist id provided does not match any existing nephrologist.")
+        else:
+            return candidate[0]
+
     def __preferences__(self, _month, _year):
         Nephrologist.__compute_days_slots_activities_map__(_month, _year, self.preferences)
 

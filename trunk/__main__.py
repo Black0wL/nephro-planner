@@ -3,6 +3,7 @@ __author__ = "Christophe"
 from Models.monthly_planning import MonthlyPlanning
 from Models.daily_planning import DailyPlanning
 import calendar
+from Models.nephrologist import Nephrologist
 from Utils.database import Database
 from datetime import date, datetime, timedelta
 from constraint import *
@@ -60,17 +61,19 @@ def main():
         activity_key = "a"
         nephrologist_key = "n"
 
-        problem = Problem()
         current_weekday = current_date.weekday()
         current_preferences = dict([(x.id, x.preferences[current_weekday][current_timeslot]) for x in Database.team() if current_weekday in x.preferences and current_timeslot in x.preferences[current_weekday]])
+        current_preferences_transversal = list(set([y for x in current_preferences for y in current_preferences[x]]))
         current_allocated = []
         current_daily_planning = month_planning.daily_plannings[current_date]
         current_activities = current_daily_planning.profile[current_timeslot]
 
-        def func(act, nep):
+        def usual_day(act, nep_id):
+            nep = Nephrologist.__get__(nep_id)
+            print(nep.name + "/" + str(act))
             verdict = True
             # activity or nephrologist are already allocated
-            if act in [x[0] for x in current_allocated if x[1] != nep] or nep in [x[1] for x in current_allocated if x[0] != act]:
+            if act in [x[0] for x in current_allocated if x[1].id != nep.id] or nep.id in [x[1].id for x in current_allocated if x[0] != act]:
                 return False
             # nephrologist has clearance for specific activity
             verdict &= act in nep.activities
@@ -90,17 +93,33 @@ def main():
                 current_allocated.append((act, nep))
             return verdict
 
-        problem.addVariable(
-            activity_key,
-            [x for x in current_activities]
-        )
-        problem.addVariable(
-            nephrologist_key,
-            [x for x in Database.team()]
-        )
-        problem.addConstraint(FunctionConstraint(func), ("a", nephrologist_key))
+        solutions = []
+        # allocating slots one at a time, starting first by activities on which preferences exist
+        for act in [y[0] for y in sorted([(x, x in current_preferences_transversal) for x in current_activities], key=lambda x: not x[1])]:
+            # instantiate a new problem
+            problem = Problem()
 
-        solutions = problem.getSolutions()
+            # add the different activities to allocate
+            problem.addVariable(
+                activity_key,
+                [act]
+            )
+
+            # add the different nephrologists
+            problem.addVariable(
+                nephrologist_key,
+                [x.id for x in Database.team()]
+            )
+            # settle the main constraint
+            problem.addConstraint(FunctionConstraint(usual_day), (activity_key, nephrologist_key))
+
+            if act in current_preferences_transversal:
+                problem.addConstraint(SomeInSetConstraint(set([x.id for x in Database.team() if x.id in [id for id in current_preferences if act in current_preferences[id]]])))
+
+            # solve the problem
+            solutions += problem.getSolutions()
+
+        '''
         if len(solutions) == 0:
             print("[WARNING] allocation failed to allocate any slots.")
         elif len(solutions) < len(current_activities):
@@ -108,10 +127,10 @@ def main():
         elif len(solutions) > len(current_activities):
             print("[WARNING] allocation allocated too many slots.")
         else:
-            for solution in solutions:
-                print(solution[nephrologist_key])
-                current_daily_planning.profile[current_timeslot][solution[activity_key]] = solution[nephrologist_key]
-            print(current_daily_planning)
+        '''
+        for solution in solutions:
+            current_daily_planning.profile[current_timeslot][solution[activity_key]] = Nephrologist.__get__(solution[nephrologist_key])
+        print(current_daily_planning)
     finally:
         pass
 

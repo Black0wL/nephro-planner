@@ -26,9 +26,6 @@ class Database:
         if not Database._team:
             _team = [
                 Nephrologist(1, "Adeline", _preferences={
-                    0: {  # monday
-                        TimeSlot.FIRST_SHIFT: [Activity.NEPHROLOGY]
-                    },  # TODO: delete
                     2: {  # wednesday
                         TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
                     },
@@ -42,9 +39,12 @@ class Database:
                 }, _holidays=[
                 ], _counters=Counter({
                     Activity.OBLIGATION: 13,
-                    Activity.NEPHROLOGY: 17
+                    Activity.NEPHROLOGY: 10
                 })),
                 Nephrologist(2, "Christine", _preferences={
+                    0: {  # monday
+                        TimeSlot.FIRST_SHIFT: [Activity.OTHERS]
+                    }, # TODO: DELETE!
                     2: {  # wednesday
                         TimeSlot.SECOND_SHIFT: [
                             Activity.CONSULTATION,
@@ -89,7 +89,10 @@ class Database:
                     date(2014, 12, 7),
                     Period(timedelta(days=10), timedelta(days=7, hours=10)),
                     date(2014, 12, 5)
-                ]),
+                ], _counters=Counter({
+                    Activity.OBLIGATION: 9,
+                    Activity.NEPHROLOGY: 13
+                })),
                 Nephrologist(4, "Interne", _activities=[
                     Activity.NEPHROLOGY,
                     Activity.OTHERS,

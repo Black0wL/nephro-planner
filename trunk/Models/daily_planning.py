@@ -78,7 +78,7 @@ class DailyPlanning():
         def render_enum(flag, nephrologist):
             m = re.search('(?<=_)\w+', flag.name)
             r = flag.name[0]
-            return (r + flag.name[1:3].lower() if not m else m.group(0)[0]) + ("({})".format(nephrologist if nephrologist else "_"))
+            return (r + flag.name[1:3].lower() if not m else m.group(0)[0]) + ("({})".format(nephrologist if nephrologist else "-"))
 
         render = str(self.date) + ": "
         for timeslot in self.profile:

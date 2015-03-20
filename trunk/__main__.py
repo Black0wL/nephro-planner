@@ -36,7 +36,7 @@ def main():
 
         holidays = dict()
         for x in Database.team():
-            holidays[x.id] = x.__holidays__(month, year)
+            holidays[x.id] = x.__holidays__(month, year)  # computing holidays for nephrologists
 
         """
         problem.addVariables(
@@ -50,86 +50,46 @@ def main():
         """
 
         from Enums.timeslot import TimeSlot
-        """
-        for x, y, z in [(dai, tim, act) for dai in [month_planning.daily_plannings[date(year, month, 1)]] for tim in dai.profile for act in dai.profile[tim] if tim == TimeSlot.FIRST_SHIFT]:
-            print str(x.date) + "|" + str(y.value) + "|" + str(z.value)
-        """
-
-        current_date = date(year, month, 1)
-        current_timeslot = TimeSlot.FIRST_SHIFT
 
         activity_key = "a"
         nephrologist_key = "n"
 
-        current_weekday = current_date.weekday()
-        current_preferences = dict([(x.id, x.preferences[current_weekday][current_timeslot]) for x in Database.team() if current_weekday in x.preferences and current_timeslot in x.preferences[current_weekday]])
-        current_preferences_transversal = list(set([y for x in current_preferences for y in current_preferences[x]]))
-        current_allocated = []
-        current_daily_planning = month_planning.daily_plannings[current_date]
-        current_activities = current_daily_planning.profile[current_timeslot]
+        # Missing: for loop to include all in-scope days.
+        # Missing: for loop to include all in-scope shifts.
+        current_date = date(year, month, 1)  # first day for constraint solving (it's a monday!)
+        current_daily_planning = month_planning.daily_plannings[current_date]  # the daily planning for the current day
 
-        def usual_day(act, nep_id):
-            nep = Nephrologist.__get__(nep_id)
-            print(nep.name + "/" + str(act))
-            verdict = True
-            # activity or nephrologist are already allocated
-            if act in [x[0] for x in current_allocated if x[1].id != nep.id] or nep.id in [x[1].id for x in current_allocated if x[0] != act]:
-                return False
-            # nephrologist has clearance for specific activity
-            verdict &= act in nep.activities
-            # nephrologist is not in holiday
-            if nep.id in holidays and current_date.day in holidays[nep.id] and current_timeslot in holidays[nep.id][current_date.day]:
-                return False
-            # nephrologist has a preference for the specific activity: shortcuts further checks
-            if not (verdict and nep.id in current_preferences and current_timeslot in current_preferences[nep.id] and act in current_preferences[nep.id][current_timeslot]):
-                # nephrologist has no aversions for specific activity
-                if current_weekday in nep.aversions and current_timeslot in nep.aversions[current_weekday]:
-                    verdict &= act not in nep.aversions[current_weekday][current_timeslot]
-                # nephrologist has minimum counter for the specific activity
-                if act in nep.counters:
-                    verdict &= nep.counters[act] == min([x.counters[act] for x in Database.team() if act in x.counters])
-            # conclude
-            if verdict:
-                current_allocated.append((act, nep))
-            return verdict
 
-        solutions = []
-        # allocating slots one at a time, starting first by activities on which preferences exist
-        for act in [y[0] for y in sorted([(x, x in current_preferences_transversal) for x in current_activities], key=lambda x: not x[1])]:
-            # instantiate a new problem
-            problem = Problem()
 
-            # add the different activities to allocate
-            problem.addVariable(
-                activity_key,
-                [act]
-            )
 
-            # add the different nephrologists
-            problem.addVariable(
-                nephrologist_key,
-                [x.id for x in Database.team()]
-            )
-            # settle the main constraint
-            problem.addConstraint(FunctionConstraint(usual_day), (activity_key, nephrologist_key))
 
-            if act in current_preferences_transversal:
-                problem.addConstraint(SomeInSetConstraint(set([x.id for x in Database.team() if x.id in [id for id in current_preferences if act in current_preferences[id]]])))
+        current_timeslot = TimeSlot.FIRST_SHIFT  # first shift for constraint solving
 
-            # solve the problem
-            solutions += problem.getSolutions()
+        current_team = [nep for nep in Database.team() if nep.id not in holidays or current_date.day not in holidays[nep.id] or current_timeslot not in holidays[nep.id][current_date.day] or nep in current_daily_planning[current_timeslot]]
+        current_activities = [act for act in current_daily_planning.profile[current_timeslot] if current_daily_planning.profile[current_timeslot][act] is None]
 
-        '''
-        if len(solutions) == 0:
-            print("[WARNING] allocation failed to allocate any slots.")
-        elif len(solutions) < len(current_activities):
-            print("[WARNING] allocation failed to allocate all slots.")
-        elif len(solutions) > len(current_activities):
-            print("[WARNING] allocation allocated too many slots.")
-        else:
-        '''
+        # instantiate a new problem
+        problem = Problem()
+
+        # add the different activities to allocate
+        problem.addVariable(activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
+        problem.addVariable(nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
+
+        problem.addConstraint(AllDifferentConstraint())
+        problem.addConstraint(lambda nep, act: nep.score(current_date.weekday(), current_timeslot, act) > 0, (nephrologist_key, activity_key))
+        problem.addConstraint(lambda nep, act: act in nep.activities, (nephrologist_key, activity_key))
+        problem.addConstraint(lambda nep, act: nep.counters[act] == min([x.counters[act] for x in current_team]), (nephrologist_key, activity_key))
+        # problem.addConstraint(lambda nep, act: , (nephrologist_key, activity_key))
+        # problem.addConstraint(lambda nep, act: max([nep.score(current_weekday, current_timeslot, act)]), (nephrologist_key, activity_key))
+
+        solutions = problem.getSolutions()
+        print(len(solutions))
+        print("-------------------------------------")
+        print(solutions)
+        print("-------------------------------------")
         for solution in solutions:
-            current_daily_planning.profile[current_timeslot][solution[activity_key]] = Nephrologist.__get__(solution[nephrologist_key])
+            if solution[nephrologist_key] in [current_daily_planning.profile[current_timeslot][act] for act in current_daily_planning.profile[current_timeslot]]:
+                current_daily_planning.profile[current_timeslot][solution[activity_key]] = solution[nephrologist_key]
         print(current_daily_planning)
     finally:
         pass

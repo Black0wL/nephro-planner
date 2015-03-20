@@ -94,6 +94,13 @@ class Nephrologist(object):
                 raise UserWarning("days/slots dump contains unmanaged types.")
         return dict([(x, list(_map[x])) for x in _map])
 
+    def score(self, weekday, timeslot, activity):
+        if weekday in self.preferences and timeslot in self.preferences[weekday] and activity in self.preferences[weekday][timeslot]:
+            return 1
+        elif weekday in self.aversions and timeslot in self.aversions[weekday] and activity in self.aversions[weekday][timeslot]:
+            return -1
+        else:
+            return 0
 
     @classmethod
     # TODO: use team() instead of Database.team()!

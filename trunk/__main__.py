@@ -28,12 +28,17 @@ def main():
             holidays[x.id] = x.__holidays__(month, year)  # computing holidays for nephrologists
 
         for (yesterday, today) in month_planning.iterate():
-            yesterday_date = date(yesterday.year, yesterday.month, yesterday.day)
+            if yesterday is not None:
+                yesterday_profile = month_planning.daily_plannings[date(yesterday.year, yesterday.month, yesterday.day)].profile
+            else:
+                yesterday_profile = None
+
             today_date = date(today.year, today.month, today.day)  # first day for constraint solving (it's a monday!)
             current_daily_planning = month_planning.daily_plannings[today_date]  # the daily planning for the current day
+
             for current_timeslot in current_daily_planning.profile:
-                current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, month_planning.daily_plannings[yesterday_date], today_date, current_timeslot, holidays)
-                current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, month_planning.daily_plannings[yesterday_date], today_date, current_timeslot, holidays)
+                current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, today_date, current_timeslot, holidays)
+                current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, today_date, current_timeslot, holidays)
             # counters MUST be updated before looping
 
         print(month_planning)

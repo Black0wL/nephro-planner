@@ -44,6 +44,7 @@ class DailyPlanning():
         if not self.profile:
             raise UserWarning("daily planning's profile has not been successfully resolved.")
 
+    '''
     def __allocate__(self, _time_slot_type, _activity_type, _id_nephrologist):
         if type(_time_slot_type) is not TimeSlot:
             raise UserWarning("{} parameter must be of type {}.".format(
@@ -76,6 +77,7 @@ class DailyPlanning():
                 # TODO: detect whether time slot for activity is already allocated!
                 self.profile[_time_slot_type.name][_activity_type.name] = _id_nephrologist
         return self
+    '''
 
     def __str__(self):
         import re
@@ -108,8 +110,8 @@ class DailyPlanning():
 
     # TODO: implement rule for DIALYSIS/FIRST_SHIFT
     def __allocate__(self, constraint_level, yesterday_profile, today_date, current_timeslot, holidays):
-        current_team = [nep for nep in Database.team() if nep.id not in holidays and today_date.day not in holidays[nep.id] and current_timeslot not in holidays[nep.id][today_date.day] or nep.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
-        current_activities = [act for act in self.profile[current_timeslot] if self.profile[current_timeslot][act] is None]
+        current_team = [x for x in Database.team() if x.id not in holidays and today_date.day not in holidays[x.id] and current_timeslot not in holidays[x.id][today_date.day] or x.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
+        current_activities = [x for x in self.profile[current_timeslot] if self.profile[current_timeslot][x] is None]
 
         # instantiate a new problem
         problem = Problem()
@@ -120,10 +122,10 @@ class DailyPlanning():
 
         # constraints declaration
         problem.addConstraint(AllDifferentConstraint())
-
-        if yesterday_profile is not None and current_timeslot == TimeSlot.FIRST_SHIFT:
-            pass
-            # problem.addConstraint(lambda nep, act: )
+        if yesterday_profile is not None and current_timeslot in yesterday_profile and current_timeslot == TimeSlot.FIRST_SHIFT:
+            # print("YESTERDAY_PROFILE: " + str(yesterday_profile[current_timeslot][act]))
+            problem.addConstraint(lambda nep, act: act == Activity.DIALYSIS and act in yesterday_profile[current_timeslot] and yesterday_profile[current_timeslot][act] is not None and nep.id == yesterday_profile[current_timeslot][act].id, (self.nephrologist_key, self.activity_key))
+            # print("YESTERDAY_PROFILE: " + str(act))
         else:
             if ConstraintStrategy.contains(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, constraint_level):
                 problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) > 0, (self.nephrologist_key, self.activity_key))

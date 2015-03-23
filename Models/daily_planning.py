@@ -3,11 +3,13 @@ __author__ = "Christophe"
 from week import Week
 from workalendar.europe import France
 from Enums.activity import Activity
+from Enums.constraint_strategy import ConstraintStrategy
 from Enums.timeslot import TimeSlot
 from Models.nephrologist import Nephrologist
 from Utils.database import Database
 from collections import Counter
 import copy
+from constraint import *
 
 
 def singleton(cls):
@@ -22,6 +24,9 @@ def singleton(cls):
 
 @singleton
 class DailyPlanning():
+    activity_key = "a"
+    nephrologist_key = "n"
+
     def __init__(self, _date):
         self.date = _date
 
@@ -98,6 +103,49 @@ class DailyPlanning():
                 self._counters[_id_nephrologist][_activity_type] += 1
         return self._counters
 
+    def currentlyAllocatedNephrologists(self, current_timeslot):
+        return [self.profile[current_timeslot][act].id for act in self.profile[current_timeslot] if self.profile[current_timeslot][act] is not None]
+
+    # TODO: implement rule for DIALYSIS/FIRST_SHIFT
+    def __allocate__(self, constraint_level, yesterday_profile, today_date, current_timeslot, holidays):
+        current_team = [nep for nep in Database.team() if nep.id not in holidays and today_date.day not in holidays[nep.id] and current_timeslot not in holidays[nep.id][today_date.day] or nep.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
+        current_activities = [act for act in self.profile[current_timeslot] if self.profile[current_timeslot][act] is None]
+
+        # instantiate a new problem
+        problem = Problem()
+
+        # add the different activities to allocate
+        problem.addVariable(self.activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
+        problem.addVariable(self.nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
+
+        # constraints declaration
+        problem.addConstraint(AllDifferentConstraint())
+
+        if yesterday_profile is not None and current_timeslot == TimeSlot.FIRST_SHIFT:
+            pass
+            # problem.addConstraint(lambda nep, act: )
+        else:
+            if ConstraintStrategy.contains(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, constraint_level):
+                problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) > 0, (self.nephrologist_key, self.activity_key))
+            else:
+                problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) == 0, (self.nephrologist_key, self.activity_key))
+
+            problem.addConstraint(lambda nep, act: act in nep.activities, (self.nephrologist_key, self.activity_key))
+
+            if not ConstraintStrategy.contains(ConstraintStrategy.DISCARD_COUNTERS.value, constraint_level):
+                problem.addConstraint(lambda nep, act: nep.counters[act] == min([x.counters[act] for x in current_team]), (self.nephrologist_key, self.activity_key))
+
+        solutions = problem.getSolutions()
+
+        # print("LENGTH_SOLUTIONS: " + str(len(solutions)))
+        # print("-------------------------------------")
+        # print(solutions)
+        # print("-------------------------------------")
+        for solution in solutions:
+            if solution[self.nephrologist_key].id not in self.currentlyAllocatedNephrologists(current_timeslot):
+                self.profile[current_timeslot][solution[self.activity_key]] = solution[self.nephrologist_key]
+        # print(self)
+        # print("-------------------------------------")
 
 '''
 _date = date(2014, 2, 5)

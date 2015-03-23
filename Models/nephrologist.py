@@ -131,6 +131,9 @@ class Nephrologist(object):
     def __str__(self):
         return self.name[0]
 
+    def __repr__(self):
+        return self.name
+
     # TODO: load activities, holidays, preferences from DB
     @classmethod
     def team(cls):

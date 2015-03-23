@@ -18,3 +18,4 @@ class Activity(Base):
 # print(list(Activity.intersect(47, 31)))
 # print(list(Activity.decompose(49)))
 # print(Activity.flags().pop())
+# print(Activity.contains(1, 4))

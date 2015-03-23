@@ -27,15 +27,23 @@ class Database:
             _team = [
                 Nephrologist(1, "Adeline", _preferences={
                     2: {  # wednesday
-                        TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.CONSULTATION
+                        ]
                     },
                     4: {  # friday
-                        TimeSlot.SECOND_SHIFT: [Activity.CONSULTATION]
+                        TimeSlot.SECOND_SHIFT: [
+                            Activity.CONSULTATION
+                        ]
                     }
                 }, _aversions={
                     1: {  # tuesday
-                        TimeSlot.FIRST_SHIFT: [Activity.NEPHROLOGY],  # TODO: DELETE!
-                        TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.NEPHROLOGY
+                        ],  # TODO: DELETE!
+                        TimeSlot.THIRD_SHIFT: [
+                            Activity.OBLIGATION
+                        ]
                     }
                 }, _holidays=[
                 ], _counters=Counter({
@@ -56,14 +64,20 @@ class Database:
                         ]
                     },
                     3: {  # thursday
-                        TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                        TimeSlot.THIRD_SHIFT: [
+                            Activity.OBLIGATION
+                        ]
                     },
                     4: {  # friday
-                        TimeSlot.FIRST_SHIFT: [Activity.CONSULTATION]
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.CONSULTATION
+                        ]
                     }
                 }, _aversions={
                     2: {  # wednesday
-                        TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                        TimeSlot.THIRD_SHIFT: [
+                            Activity.OBLIGATION
+                        ]
                     }
                 }, _counters=Counter({
                     Activity.OBLIGATION: 9,
@@ -71,13 +85,19 @@ class Database:
                 })),
                 Nephrologist(3, "Severine", _preferences={
                     0: {  # monday
-                        TimeSlot.SECOND_SHIFT: [Activity.CONSULTATION]
+                        TimeSlot.SECOND_SHIFT: [
+                            Activity.CONSULTATION
+                        ]
                     },
                     1: {  # tuesday
-                        TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                        TimeSlot.THIRD_SHIFT: [
+                            Activity.OBLIGATION
+                        ]
                     },
                     2: {  # wednesday
-                        TimeSlot.SECOND_SHIFT: [Activity.OBLIGATION_RECOVERY]
+                        TimeSlot.SECOND_SHIFT: [
+                            Activity.OBLIGATION_RECOVERY
+                        ]
                     },
                     3: {  # thursday
                         TimeSlot.FIRST_SHIFT: [
@@ -87,8 +107,12 @@ class Database:
                     }
                 }, _aversions={
                     0: {  # monday
-                        TimeSlot.FIRST_SHIFT: [Activity.NEPHROLOGY],  # TODO: DELETE!
-                        TimeSlot.THIRD_SHIFT: [Activity.OBLIGATION]
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.NEPHROLOGY
+                        ],  # TODO: DELETE!
+                        TimeSlot.THIRD_SHIFT: [
+                            Activity.OBLIGATION
+                        ]
                     }
                 }, _holidays=[
                     date(2014, 12, 7),  # TODO: DELETE!
@@ -105,7 +129,7 @@ class Database:
                 ], _holidays=[
                     date(2014, 12, 2)  # TODO: DELETE!
                 ], _counters=Counter({
-                    Activity.NEPHROLOGY: 4,
+                    Activity.NEPHROLOGY: 14,
                     Activity.OTHERS: 6
                 }))
             ]

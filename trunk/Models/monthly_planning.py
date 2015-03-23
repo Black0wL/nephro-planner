@@ -30,6 +30,16 @@ class MonthlyPlanning():
         self.month = _month
         self.daily_plannings = dict()
 
+        for _date in [date(_year, _month, day) for day in range(1, calendar.monthrange(_year, _month)[1]+1)]:
+            self.daily_plannings[_date] = DailyPlanning(_date)
+
+        _date = sorted(self.daily_plannings.keys())[len(self.daily_plannings)-1]
+        _index = _date.weekday()
+        if _index > 3:  # if last month's day is friday, saturday or sunday (unusual day)
+            for _day in range(1, 6-_index+1):
+                _date = (datetime(_date.year, _date.month, _day) + timedelta(days=1)).date()
+                self.daily_plannings[_date] = DailyPlanning(_date)
+
         """
         with Parameters() as params, sqlite3.connect(params.data[Constants.DATABASE_FILENAME_KEY]) as connection:
             cursor = connection.cursor()
@@ -60,6 +70,25 @@ class MonthlyPlanning():
                     row[3]
                 )
         """
+
+    def iterate(self):
+        from itertools import chain, repeat, islice
+        from math import floor
+
+        def pad_infinite(iterable, padding=None):
+           return chain(iterable, repeat(padding))
+
+        def pad(iterable, size, padding=None):
+           return islice(pad_infinite(iterable, padding), size)
+
+        plain = sorted([A for A in self.daily_plannings])
+        isPlainEven = len(plain) % 2 == 0
+        odds = iter(plain[:(len(plain) if isPlainEven else len(plain)-1)])
+        even = iter(plain[1:(len(plain)-1 if isPlainEven else len(plain))])
+        odds_iter = pad([(A, next(odds)) for A in odds], floor(len(plain)/2))
+        even_iter = pad([(A, next(even)) for A in even], floor(len(plain)/2))
+
+        return [(None, datetime(self.year, self.month, 1))] + [A for A in list(chain.from_iterable(zip(odds_iter, even_iter))) if A is not None]
 
     def __str__(self):
         return "\n".join([str(self.daily_plannings[daily_planning]) for daily_planning in sorted(self.daily_plannings)])

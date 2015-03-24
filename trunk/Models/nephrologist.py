@@ -10,6 +10,7 @@ from Models.duration import Duration
 from datetime import date
 from datetime import datetime, timedelta
 from collections import Counter
+import copy
 import sqlite3
 import calendar
 
@@ -69,7 +70,13 @@ class Nephrologist(object):
 
         if _counters and not isinstance(_counters, Counter):
             raise UserWarning("counters must be of type {}".format(Counter))
-        self.counters = _counters if _counters else Counter()
+        self.initial_counters = _counters if _counters else Counter()
+        self.individual_counters = copy.deepcopy(self.initial_counters)
+
+    def counters(self, _reset=False):
+        if _reset:
+            self.individual_counters = copy.deepcopy(self.initial_counters)
+        return self.individual_counters
 
     def __holidays__(self, _month, _year):
         _map = dict()  # map { day_number: [off_time_slots]}

@@ -16,6 +16,12 @@ def main():
         # Database.__create__()
         # Nephrologist.__load__()
 
+        '''
+        from Enums.activity import Activity
+        print sum([x.counters[y] for x in Database.team() for y in Activity.flags()])
+        return
+        '''
+
         year = 2014
         month = 12
         month_planning = MonthlyPlanning(year, month)
@@ -37,10 +43,12 @@ def main():
             current_daily_planning = month_planning.daily_plannings[today_date]  # the daily planning for the current day
 
             for current_timeslot in current_daily_planning.profile:
+                current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, today_date, current_timeslot, holidays)
-            # counters MUST be updated before looping
-
+            month_planning.counters(True)  # counters MUST be updated before looping
+            print(Database.team()[0].counters())
+        print("------------------------------------------------------------")
         print(month_planning)
     finally:
         pass

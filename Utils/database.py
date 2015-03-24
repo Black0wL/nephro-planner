@@ -24,7 +24,7 @@ class Database:
     def team(cls):
         from Models.nephrologist import Nephrologist
         if not Database._team:
-            _team = [
+            Database._team = [
                 Nephrologist(1, "Adeline", _preferences={
                     2: {  # wednesday
                         TimeSlot.FIRST_SHIFT: [
@@ -133,7 +133,7 @@ class Database:
                     Activity.OTHERS: 6
                 }))
             ]
-        return _team
+        return Database._team
 
     @classmethod
     def __create__(cls):

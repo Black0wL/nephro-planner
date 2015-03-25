@@ -39,16 +39,16 @@ class Database:
                 }, _aversions={
                     1: {  # tuesday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.NEPHROLOGY
-                        ],  # TODO: DELETE!
+                            Activity.NEPHROLOGY  # TODO: DELETE!
+                        ],
                         TimeSlot.THIRD_SHIFT: [
                             Activity.OBLIGATION
                         ]
                     }
                 }, _holidays=[
                 ], _counters=Counter({
-                    Activity.OBLIGATION: 13,
-                    Activity.NEPHROLOGY: 9
+                    # Activity.OBLIGATION: 13,  # TODO: DELETE!
+                    # Activity.NEPHROLOGY: 9  # TODO: DELETE!
                 })),
                 Nephrologist(2, "Christine", _preferences={
                     0: {  # monday
@@ -80,8 +80,8 @@ class Database:
                         ]
                     }
                 }, _counters=Counter({
-                    Activity.OBLIGATION: 9,
-                    Activity.NEPHROLOGY: 11
+                    # Activity.OBLIGATION: 9,  # TODO: DELETE!
+                    # Activity.NEPHROLOGY: 11  # TODO: DELETE!
                 })),
                 Nephrologist(3, "Severine", _preferences={
                     0: {  # monday
@@ -108,8 +108,8 @@ class Database:
                 }, _aversions={
                     0: {  # monday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.NEPHROLOGY
-                        ],  # TODO: DELETE!
+                            Activity.NEPHROLOGY  # TODO: DELETE!
+                        ],
                         TimeSlot.THIRD_SHIFT: [
                             Activity.OBLIGATION
                         ]
@@ -119,8 +119,8 @@ class Database:
                     Period(timedelta(days=10), timedelta(days=7, hours=10)),  # TODO: DELETE!
                     date(2014, 12, 5)  # TODO: DELETE!
                 ], _counters=Counter({
-                    Activity.OBLIGATION: 9,
-                    Activity.NEPHROLOGY: 13
+                    # Activity.OBLIGATION: 9,  # TODO: DELETE!
+                    # Activity.NEPHROLOGY: 13  # TODO: DELETE!
                 })),
                 Nephrologist(4, "Interne", _activities=[
                     Activity.NEPHROLOGY,
@@ -129,8 +129,9 @@ class Database:
                 ], _holidays=[
                     date(2014, 12, 2)  # TODO: DELETE!
                 ], _counters=Counter({
-                    Activity.NEPHROLOGY: 14,
-                    Activity.OTHERS: 6
+                    # Activity.NEPHROLOGY: 14,  # TODO: DELETE!
+                    # Activity.OBLIGATION: 19,  # TODO: DELETE!
+                    # Activity.OTHERS: 6  # TODO: DELETE!
                 }))
             ]
         return Database._team

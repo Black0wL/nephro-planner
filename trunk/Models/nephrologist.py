@@ -73,9 +73,9 @@ class Nephrologist(object):
         self.initial_counters = _counters if _counters else Counter()
         self.individual_counters = copy.deepcopy(self.initial_counters)
 
-    def counters(self, _reset=False):
-        if _reset:
-            self.individual_counters = copy.deepcopy(self.initial_counters)
+    def counters(self):
+        # if _reset:
+        #     self.individual_counters = copy.deepcopy(self.initial_counters)
         return self.individual_counters
 
     def __holidays__(self, _month, _year):

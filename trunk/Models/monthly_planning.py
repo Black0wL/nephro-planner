@@ -94,17 +94,19 @@ class MonthlyPlanning():
     def __str__(self):
         return "\n".join([str(self.daily_plannings[daily_planning]) for daily_planning in sorted(self.daily_plannings)])
 
+    '''
     def counters(self, _reset=False):
         if _reset:
             self.individual_counters = None
         if not self.individual_counters:
             # TODO: call Nephrologist.team() instead of Database.team()
-            self.individual_counters = dict([(nep.id, nep.counters()) for nep in Database.team()])  # creating a new counters profile for each nephrologist
+            self.individual_counters = dict([(nep.id, Counter()) for nep in Database.team()])  # creating a new counters profile for each nephrologist
             for (nep_id, _daily_planning_counters) in [(key_nep_id, self.daily_plannings[today].counters(_reset)) for today in self.daily_plannings for key_nep_id in self.individual_counters]:
                 if nep_id not in self.individual_counters:
                     self.individual_counters[nep_id] = Counter()
                 self.individual_counters[nep_id] += _daily_planning_counters[nep_id]
         return self.individual_counters
+    '''
 
     # TODO: implement proper rendering into excel spreadsheet
     def output(self, filename, sheet_name, list1, list2, x, y, z):

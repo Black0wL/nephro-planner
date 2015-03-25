@@ -4,6 +4,7 @@ from Models.monthly_planning import MonthlyPlanning
 from Models.daily_planning import DailyPlanning
 from Enums.constraint_strategy import ConstraintStrategy
 from Enums.timeslot import TimeSlot
+from Enums.activity import Activity
 import calendar
 from Models.nephrologist import Nephrologist
 from Utils.database import Database
@@ -32,6 +33,12 @@ def main():
         holidays = dict()
         for x in Database.team():
             holidays[x.id] = x.__holidays__(month, year)  # computing holidays for nephrologists
+            # print(holidays[x.id])
+
+        '''
+        for x in Database.team():
+            print(repr(x) + ": " + str(x.activities))
+        '''
 
         for (yesterday, today) in month_planning.iterate():
             if yesterday is not None:
@@ -42,12 +49,25 @@ def main():
             today_date = date(today.year, today.month, today.day)  # first day for constraint solving (it's a monday!)
             current_daily_planning = month_planning.daily_plannings[today_date]  # the daily planning for the current day
 
+            # print(today)
             for current_timeslot in current_daily_planning.profile:
                 current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, today_date, current_timeslot, holidays)
-            month_planning.counters(True)  # counters MUST be updated before looping
-            print(Database.team()[0].counters())
+                '''
+                print("--------------------------------------------------")
+                for x in Database.team():
+                    print(repr(x) + ": " + str(x.counters()))
+                '''
+            '''
+
+            for y in current_daily_planning.profile:
+                print(str(today) + "|" + str(y) + ": " + "-".join([str(x) for x in sorted(current_daily_planning.currentlyAllocatedNephrologists(y))]))
+            '''
+            # print("-".join([str(x) for x in current_daily_planning.currentlyAllocatedNephrologists(current_timeslot)]))
+            # print(" | ".join([str(x) + ": " + str(x.counters()[Activity.OBLIGATION]) for x in Database.team()]))
+            # month_planning.counters()  # counters MUST be updated before looping
+            # print(Database.team()[0].counters())
         print("------------------------------------------------------------")
         print(month_planning)
     finally:

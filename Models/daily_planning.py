@@ -26,6 +26,7 @@ def singleton(cls):
 class DailyPlanning():
     activity_key = "a"
     nephrologist_key = "n"
+    obligation_activities = [Activity.OBLIGATION, Activity.OBLIGATION_WEEKEND, Activity.OBLIGATION_HOLIDAY]
 
     def __init__(self, _date):
         self.individual_counters = None
@@ -121,25 +122,55 @@ class DailyPlanning():
         if len(list(set([current_activity]) & set([x for x in self.profile[current_timeslot]]))) == 1 and self.profile[current_timeslot][current_activity] is None:
                 self.__slot__(current_timeslot, current_activity, current_nephrologist)
 
-    def __allocate__(self, constraint_level, yesterday_profile, today_date, current_timeslot, holidays):
+    def __general_parameters__(self, today_date, current_timeslot, holidays):
         current_team = [x for x in Database.team() if x.id not in holidays and today_date.day not in holidays[x.id] and current_timeslot not in holidays[x.id][today_date.day] or x.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
-        current_activities = [x for x in self.profile[current_timeslot] if self.profile[current_timeslot][x] is None]
+        current_activities = [x for x in self.profile[current_timeslot] if not self.isCurrentlyAllocatedActivity(current_timeslot, x)]
+        return current_team, current_activities
+
+    def __general_problem__(self):
+        pass
+
+    def __allocate__(self, constraint_level, yesterday_profile, today_date, current_timeslot, holidays):
+        current_team, current_activities = self.__general_parameters__(today_date, current_timeslot, holidays)
 
         # print(len(current_activities) > 0 and len(current_team) > 0)
         # print(str(len(current_activities)) + "/" + str(len(current_team)))
         # print(constraint_level)
         if ConstraintStrategy.contains(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, constraint_level):
             if current_timeslot == TimeSlot.FIRST_SHIFT and yesterday_profile is not None and TimeSlot.THIRD_SHIFT in yesterday_profile:
-                obligation_activities = [Activity.OBLIGATION, Activity.OBLIGATION_WEEKEND, Activity.OBLIGATION_HOLIDAY]
-                yesterday_obligations = list(set(obligation_activities) & set([x for x in yesterday_profile[TimeSlot.THIRD_SHIFT]]))
+                yesterday_obligations = list(set(self.obligation_activities) & set([x for x in yesterday_profile[TimeSlot.THIRD_SHIFT]]))
                 if len(yesterday_obligations) == 1 and yesterday_profile[TimeSlot.THIRD_SHIFT][yesterday_obligations[0]] is not None:
-                    today_activities = list(set([Activity.DIALYSIS] + obligation_activities) & set([x for x in self.profile[current_timeslot]]))
+                    today_activities = list(set([Activity.DIALYSIS] + self.obligation_activities) & set([x for x in self.profile[current_timeslot]]))
                     if len(today_activities) == 1:
                         self.__slot__(current_timeslot, today_activities[0], yesterday_profile[TimeSlot.THIRD_SHIFT][yesterday_obligations[0]])
                     # problem.addConstraint(lambda nep, act: act in [Activity.DIALYSIS] + obligation_activities and nep.id == yesterday_profile[TimeSlot.THIRD_SHIFT][yesterday_obligations[0]].id, (self.nephrologist_key, self.activity_key))
         elif len(current_activities) > 0 and len(current_team) > 0:
+            # instantiate a new problem
+            problem = Problem()
+
+            # add the different activities to allocate
+            problem.addVariable(self.activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
+            problem.addVariable(self.nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
+
+            # constraints declaration
+            problem.addConstraint(AllDifferentConstraint())
+
+            problem.addConstraint(lambda nep, act: act in nep.activities, (self.nephrologist_key, self.activity_key))
+
+            if not ConstraintStrategy.contains(ConstraintStrategy.DISCARD_COUNTERS.value, constraint_level):
+                problem.addConstraint(lambda nep, act: self.isVolunteerNephrologist(current_team, nep, act), (self.nephrologist_key, self.activity_key))
+                # problem.addConstraint(lambda nep, act: sum([nep.counters()[y] for y in current_activities]) == min([sum([x.counters()[y] for y in current_activities]) for x in [y for y in current_team if act in y.activities and act in current_activities]]), (self.nephrologist_key, self.activity_key))
+
+            if ConstraintStrategy.contains(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, constraint_level):
+                problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) > 0, (self.nephrologist_key, self.activity_key))
+            else:
+                problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) == 0, (self.nephrologist_key, self.activity_key))
+
             if ConstraintStrategy.contains(ConstraintStrategy.ALLOCATE_WEEKEND_DAYS.value, constraint_level):
                 '''
+                    N must have clearance for all the activities: [[OTHERS, DIALYSIS, OBLIGATION]|[OBLIGATION_HOLIDAY] + [OBLIGATION_WEEKEND]]
+                    N must minimize counters for OBLIGATION_WEEKEND, then optionally for [OTHERS, DIALYSIS, OBLIGATION] or [OBLIGATION_HOLIDAY]
+
                     N does OTHERS on FIRST_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
                     N does DIALYSIS on SECOND_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
                     N does OBLIGATION on THIRD_SHIFT (or OBLIGATION_HOLIDAY if DAY is holiday)
@@ -150,41 +181,52 @@ class DailyPlanning():
                     - N: the chosen nephrologist
                     - DAY: Friday
                 '''
+
                 if today_date.weekday() == 4:
-                    today_nephrologists = list(set(self.restrictedToClearanceTeam(current_team, Activity.OTHERS)) & set([x for x in self.restrictedToClearanceTeam(current_team, Activity.OBLIGATION) if self.isVolunteerNephrologist(current_team, x, Activity.OBLIGATION)]))
-                    if len(today_nephrologists) > 0:
-                        current_nephrologist = today_nephrologists[0]
+                    # TODO: all three timeslots should be attributed in the same time... creating overhead for nothing.
+                    current_nephrologist = None
+
+                    # if nephrologist already allocated for THIRD_SHIFT
+                    today_activities = list(set([Activity.OBLIGATION] + self.obligation_activities) & set([x for x in self.profile[TimeSlot.THIRD_SHIFT]]))
+                    if current_nephrologist is None and len(today_activities) == 1:
+                        current_nephrologist = self.profile[TimeSlot.THIRD_SHIFT][today_activities[0]]
+
+                    # if nephrologist already allocated for SECOND_SHIFT
+                    today_activities = list(set([Activity.DIALYSIS] + self.obligation_activities) & set([x for x in self.profile[TimeSlot.SECOND_SHIFT]]))
+                    if current_nephrologist is None and len(today_activities) == 1:
+                        current_nephrologist = self.profile[TimeSlot.SECOND_SHIFT][today_activities[0]]
+
+                    # if nephrologist already allocated for FIRST_SHIFT
+                    today_activities = list(set([Activity.OTHERS] + self.obligation_activities) & set([x for x in self.profile[TimeSlot.FIRST_SHIFT]]))
+                    if current_nephrologist is None and len(today_activities) == 1:
+                        current_nephrologist = self.profile[TimeSlot.FIRST_SHIFT][today_activities[0]]
+
+                    # if nephrologist not already found amongst available nephrologists
+                    if current_nephrologist is None:
+                        # TODO: upgrade this part...
+                        problem.addConstraint(lambda nep, act: Activity.OTHERS in nep.activities and Activity.DIALYSIS in nep.activities and Activity.OBLIGATION in nep.activities, (self.nephrologist_key, self.activity_key))
+                        problem.addConstraint(lambda nep: True in [self.isVolunteerNephrologist(current_team, nep, act) for act in list(set(self.obligation_activities) & set(self.profile[TimeSlot.THIRD_SHIFT]))], (self.nephrologist_key))
+
+                        solutions = problem.getSolutions()
+                        if len(solutions) > 0:
+                            current_nephrologist = solutions[0][self.nephrologist_key]
+
+                    if current_nephrologist is not None:
                         # TODO: pick nephrologist if already set!
+                        # TODO: check whether nephrologist is already set?
                         if current_timeslot == TimeSlot.FIRST_SHIFT:
                             self.__allocate_friday__(current_timeslot, Activity.OTHERS, current_nephrologist)
                         elif current_timeslot == TimeSlot.SECOND_SHIFT:
                             self.__allocate_friday__(current_timeslot, Activity.DIALYSIS, current_nephrologist)
                         elif current_timeslot == TimeSlot.THIRD_SHIFT:
                             self.__allocate_friday__(current_timeslot, Activity.OBLIGATION, current_nephrologist)
-                elif today_date.weekday() in [5, 6]:  # friday, saturday, sunday
-                    pass
+                elif today_date.weekday() in [5, 6] and yesterday_profile is not None and TimeSlot.THIRD_SHIFT in yesterday_profile:  # friday, saturday, sunday
+                    yesterday_obligations = list(set(self.obligation_activities) & set([x for x in yesterday_profile[TimeSlot.THIRD_SHIFT]]))
+                    if len(yesterday_obligations) == 1 and yesterday_profile[TimeSlot.THIRD_SHIFT][yesterday_obligations[0]] is not None:
+                        today_activities = list(set(self.obligation_activities) & set([x for x in self.profile[current_timeslot]]))
+                        if len(today_activities) == 1:
+                            self.__slot__(current_timeslot, today_activities[0], yesterday_profile[TimeSlot.THIRD_SHIFT][yesterday_obligations[0]])
             else:
-                # instantiate a new problem
-                problem = Problem()
-
-                # add the different activities to allocate
-                problem.addVariable(self.activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
-                problem.addVariable(self.nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
-
-                # constraints declaration
-                problem.addConstraint(AllDifferentConstraint())
-
-                problem.addConstraint(lambda nep, act: act in nep.activities, (self.nephrologist_key, self.activity_key))
-
-                if ConstraintStrategy.contains(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, constraint_level):
-                    problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) > 0, (self.nephrologist_key, self.activity_key))
-                else:
-                    problem.addConstraint(lambda nep, act: nep.score(today_date.weekday(), current_timeslot, act) == 0, (self.nephrologist_key, self.activity_key))
-
-                if not ConstraintStrategy.contains(ConstraintStrategy.DISCARD_COUNTERS.value, constraint_level):
-                    problem.addConstraint(lambda nep, act: self.isVolunteerNephrologist(current_team, nep, act), (self.nephrologist_key, self.activity_key))
-                    # problem.addConstraint(lambda nep, act: sum([nep.counters()[y] for y in current_activities]) == min([sum([x.counters()[y] for y in current_activities]) for x in [y for y in current_team if act in y.activities and act in current_activities]]), (self.nephrologist_key, self.activity_key))
-
                 solutions = problem.getSolutions()
 
                 # print("LENGTH_SOLUTIONS: " + str(len(solutions)))

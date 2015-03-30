@@ -51,8 +51,8 @@ def main():
 
             # print(today)
             for current_timeslot in current_daily_planning.profile:
-                current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_WEEKEND_DAYS.value, yesterday_profile, today_date, current_timeslot, holidays)
+                current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, today_date, current_timeslot, holidays)
                 current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, today_date, current_timeslot, holidays)
                 # current_daily_planning.__allocate__(ConstraintStrategy.NONE.value, yesterday_profile, today_date, current_timeslot, holidays)
                 # current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, today_date, current_timeslot, holidays)  # ultimate padding strategy
@@ -61,8 +61,8 @@ def main():
                 for x in Database.team():
                     print(repr(x) + ": " + str(x.counters()))
                 '''
-            '''
 
+            '''
             for y in current_daily_planning.profile:
                 print(str(today) + "|" + str(y) + ": " + "-".join([str(x) for x in sorted(current_daily_planning.currentlyAllocatedNephrologists(y))]))
             '''

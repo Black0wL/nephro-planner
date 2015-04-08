@@ -119,7 +119,7 @@ class Database:
                     Period(timedelta(days=10), timedelta(days=7, hours=10)),  # TODO: DELETE!
                     date(2014, 12, 5)  # TODO: DELETE!
                 ], _counters=Counter({
-                    # Activity.OBLIGATION: 0,  # TODO: DELETE!
+                    # Activity.OBLIGATION_WEEKEND: 7,  # TODO: DELETE!
                     # Activity.NEPHROLOGY: 13  # TODO: DELETE!
                 })),
                 Nephrologist(4, "Interne", _activities=[

@@ -46,21 +46,26 @@ def main():
             else:
                 yesterday_profile = None
 
-            today_date = date(today.year, today.month, today.day)  # first day for constraint solving (it's a monday!)
-            current_daily_planning = month_planning.daily_plannings[today_date]  # the daily planning for the current day
+            current_daily_planning = month_planning.daily_plannings[date(today.year, today.month, today.day)]  # the daily planning for the current day
 
-            # print(today)
+            # if today_date is weekend day or today_date is holiday
+            if current_daily_planning.weekday in [4, 5, 6] or not current_daily_planning.is_working_day:
+                # allocate all damn day in the same time
+                current_daily_planning.__allocate_whole_day__(ConstraintStrategy.ALLOCATE_WEEKEND_DAYS.value, yesterday_profile, holidays)
+                current_daily_planning.__allocate_whole_day__(ConstraintStrategy.ALLOCATE_HOLIDAYS.value, yesterday_profile, holidays)
+
+            # allocate all day's timeslots separately
             for current_timeslot in current_daily_planning.profile:
-                current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_WEEKEND_DAYS.value, yesterday_profile, today_date, current_timeslot, holidays)
-                current_daily_planning.__allocate__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, today_date, current_timeslot, holidays)
-                current_daily_planning.__allocate__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, today_date, current_timeslot, holidays)
-                # current_daily_planning.__allocate__(ConstraintStrategy.NONE.value, yesterday_profile, today_date, current_timeslot, holidays)
-                # current_daily_planning.__allocate__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, today_date, current_timeslot, holidays)  # ultimate padding strategy
-                '''
-                print("--------------------------------------------------")
-                for x in Database.team():
-                    print(repr(x) + ": " + str(x.counters()))
-                '''
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, current_timeslot, holidays)
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, current_timeslot, holidays)
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.NONE.value, yesterday_profile, current_timeslot, holidays)
+                # current_daily_planning.__allocate_timeslot__(ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, current_timeslot, holidays)  # ultimate padding strategy
+
+            '''
+            print("--------------------------------------------------")
+            for x in Database.team():
+                print(repr(x) + ": " + str(x.counters()))
+            '''
 
             '''
             for y in current_daily_planning.profile:

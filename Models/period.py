@@ -1,7 +1,7 @@
 __author__ = "Christophe"
 
 from Utils.timedelta_extension import timedelta
-from Utils.datetime_extension import datetime
+from datetime import datetime
 from Enums.timeslot import TimeSlot
 from Utils.constants import Constants
 import calendar
@@ -19,7 +19,7 @@ class Period():
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
     """
-    def __init__(self, _offset, _progressive_period, _onward=True):
+    def __init__(self, _offset, _progressive_period=None, _onward=True):
         if _offset:
             if not isinstance(_offset, timedelta):
                 raise UserWarning("offset parameter must be of {}.".format(timedelta))

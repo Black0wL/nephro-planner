@@ -6,6 +6,7 @@ from Utils.database import Database
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 from Models.period import Period
+from Models.perioder import Perioder
 from Models.duration import Duration
 from datetime import date
 from datetime import datetime, timedelta
@@ -78,6 +79,7 @@ class Nephrologist(object):
         #     self.individual_counters = copy.deepcopy(self.initial_counters)
         return self.individual_counters
 
+    # TODO: take into account month overflow if applicable
     def __holidays__(self, _month, _year):
         _map = dict()  # map { day_number: [off_time_slots]}
         _lowest = datetime(_year, _month, 1)
@@ -87,12 +89,14 @@ class Nephrologist(object):
             switch = {
                 date: lambda: {_blob.day: TimeSlot.flags()} if _lowest.date() <= _blob <= _uppest.date() else [],
                 Period: lambda: _blob.__transform__(_year, _month),
+                Perioder: lambda: _blob.__transform__(_year, _month),
                 Duration: lambda: _blob.__transform__(_year, _month)
             }
             fuse = [(x, isinstance(_blob, x)) for x in switch]
             if any([x[1] for x in fuse]):
                 _slots = switch[[x[0] for x in fuse if x[1]][0]]()
 
+                print(_slots)
                 for day_slot in _slots:
                     if day_slot not in _map:
                         _map[day_slot] = set()

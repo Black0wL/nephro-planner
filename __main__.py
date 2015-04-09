@@ -33,7 +33,9 @@ def main():
         holidays = dict()
         for x in Database.team():
             holidays[x.id] = x.__holidays__(month, year)  # computing holidays for nephrologists
-            # print(holidays[x.id])
+            print(repr(x) + ": ")
+            for holiday in sorted(holidays[x.id]):
+                print("\t" + str(holiday) + ": " + "|".join([y.name[0] for y in holidays[x.id][holiday]]))
 
         '''
         for x in Database.team():

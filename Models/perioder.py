@@ -10,11 +10,11 @@ from datetime import date
     - date only: 2014-06-12
     - absolute date duration: from 2014-06-12 to 2014-06-15
     - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
+
+    We does not need these scenarii:
     - relative date period: every monday
     - relative backward datetime period: every monday (from 00:00:00.000000) to 12:00:00
     - relative onward datetime period: every monday since 12:00:00 (to 23:59:59.999999)
-
-    We does not need these scenarii:
     - datetime only
     - relative&absolute onward date period: from 2014-06-12 every monday
     - relative&absolute onward datetime period: from 2014-06-12T10:00:00 every monday morning
@@ -26,44 +26,30 @@ from datetime import date
 class Perioder():
     """ constructor of the class
 
-        @param _lower_delta: initial relative time reference.
-        @type _lower_delta: timedelta
-        @param _lower_date: initial absolute time reference.
-        @type _lower_date: timedelta
+        @param _lower_datetime: initial absolute time reference.
+        @type _lower_datetime: timedelta
         @param _progressive_period: period on which _initial.
         @type _progressive_period: timedelta
-        @param _upper_delta: initial relative time reference.
-        @type _upper_delta: timedelta
-        @param _upper_date: initial relative time reference.
-        @type _upper_date: timedelta
+        @param _upper_datetime: initial relative time reference.
+        @type _upper_datetime: timedelta
 
         Technical note on timedeltas: only days, seconds and microseconds are stored internally.
     """
-    def __init__(self, _lower_delta=None, _lower_date=None, _progressive_period=None, _upper_delta=None, _upper_date=None):
-        if _lower_delta:
-            if not isinstance(_lower_delta, timedelta):
-                raise UserWarning("lower delta parameter must be of {}.".format(timedelta))
-        self.lower_delta = _lower_delta  # timedelta  NULL
-
-        if _lower_date:
-            if not isinstance(_lower_date, date):
-                raise UserWarning("lower date parameter must be of {}.".format(date))
-        self.lower_date = _lower_date  # date NULL
+    def __init__(self, _lower_datetime=None, _progressive_period=None, _upper_datetime=None):
+        if _lower_datetime:
+            if not isinstance(_lower_datetime, datetime):
+                raise UserWarning("lower date parameter must be of {}.".format(datetime))
+        self.lower_datetime = _lower_datetime  # date NULL
 
         if _progressive_period:
             if not isinstance(_progressive_period, timedelta):
                 raise UserWarning("progressive period parameter must be of {}.".format(timedelta))
         self.progressive_period = _progressive_period  # timedelta NULL
 
-        if _upper_delta:
-            if not isinstance(_upper_delta, timedelta):
-                raise UserWarning("upper delta parameter must be of {}.".format(timedelta))
-        self.upper_delta = _upper_delta  # timedelta NULL
-
-        if _upper_date:
-            if not isinstance(_upper_date, date):
-                raise UserWarning("upper date parameter must be of {}.".format(date))
-        self.upper_date = _upper_date  # date NULL
+        if _upper_datetime:
+            if not isinstance(_upper_datetime, datetime):
+                raise UserWarning("upper date parameter must be of {}.".format(datetime))
+        self.upper_datetime = _upper_datetime  # date NULL
 
     def __str__(self):
         return super(self)
@@ -78,7 +64,7 @@ class Perioder():
         @param _month: month of the temporal focus
         @type _month: int
     """
-    def __expand__(self, _year, _month):
+    def __transform__(self, _year, _month):
         """
 
         :rtype : (tuple(datetime, datetime), bool)
@@ -89,21 +75,19 @@ class Perioder():
         _lower_bound = datetime(_year, _month, 1)
         _upper_bound = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
 
-        #
-        if self.lower_date and self.lower_date < _lower_bound:
-            _lower_date = self.lower_date
-        elif self.lower_delta:
-            _lower_date = _lower_bound + self.lower_delta
+        if self.lower_datetime:
+            if self.lower_datetime < _lower_bound:
+                _lower_date = self.lower_datetime
+            else:
+                _lower_date = _lower_bound
         else:
             _lower_date = _lower_bound
 
-        if self.upper_date:
-            if self.upper_date <= _upper_bound:
-                _upper_date = self.upper_date
+        if self.upper_datetime:
+            if self.upper_datetime <= _upper_bound:
+                _upper_date = self.upper_datetime
             else:
                 _upper_date = _upper_bound
-        elif self.upper_delta:
-            _upper_date = self.upper_delta
         else:
             _upper_date = None
 

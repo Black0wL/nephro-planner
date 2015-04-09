@@ -1,10 +1,10 @@
 __author__ = "Christophe"
 
 
-from Models.period import Period
+from Models.perioder import Perioder
 from collections import Counter
 from timedelta_extension import timedelta
-from datetime import date
+from datetime import date, datetime
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 import sqlite3
@@ -116,7 +116,8 @@ class Database:
                     }
                 }, _holidays=[
                     date(2014, 12, 7),  # TODO: DELETE!
-                    Period(timedelta(days=10), timedelta(days=7, hours=10)),  # TODO: DELETE!
+                    # Period(timedelta(days=10, hours=5), timedelta(days=7)),  # TODO: DELETE!
+                    Perioder(_lower_datetime=datetime(2014, 12, 10), _upper_datetime=datetime(2014, 12, 20)),  # TODO: DELETE!
                     date(2014, 12, 5)  # TODO: DELETE!
                 ], _counters=Counter({
                     # Activity.OBLIGATION_WEEKEND: 7,  # TODO: DELETE!

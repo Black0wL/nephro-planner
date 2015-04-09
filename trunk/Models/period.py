@@ -10,7 +10,7 @@ import calendar
 class Period():
     """ constructor of the class
 
-        @param _offset: relative positive offset from first monday of a specific month.
+        @param _offset: relative positive offset from first day of a specific month.
         @type _offset: timedelta
         @param _progressive_period: positive period.
         @type _progressive_period: timedelta

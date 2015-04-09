@@ -14,7 +14,7 @@ class Constants:
 
         FIRST_SHIFT: from 05:00:00 to 12:59:59.999999
         SECOND_SHIFT: from 13:00:00 to 20:59:59.999999
-        SECOND_SHIFT: from 21:00:00 to 04:59:59.999999
+        THIRD_SHIFT: from 21:00:00 to 04:59:59.999999
     """
     slots_temporally = {
         TimeSlot.FIRST_SHIFT: (

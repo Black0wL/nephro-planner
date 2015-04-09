@@ -1,17 +1,17 @@
 __author__ = "Christophe"
 
-from Utils.datetime_extension import datetime
 from Utils.timedelta_extension import timedelta
-from datetime import date
+from Models.period import Period
+from datetime import datetime
 
 
 """
     With this class, we want to deal with multiple scenarii:
-    - date only: 2014-06-12
-    - absolute date duration: from 2014-06-12 to 2014-06-15
     - absolute datetime duration: from 2014-06-12T12:00:00 to 2014-06-15T05:00:00
 
     We does not need these scenarii:
+    - date only: 2014-06-12
+    - absolute date duration: from 2014-06-12 to 2014-06-15
     - relative date period: every monday
     - relative backward datetime period: every monday (from 00:00:00.000000) to 12:00:00
     - relative onward datetime period: every monday since 12:00:00 (to 23:59:59.999999)
@@ -27,24 +27,16 @@ class Perioder():
     """ constructor of the class
 
         @param _lower_datetime: initial absolute time reference.
-        @type _lower_datetime: timedelta
-        @param _progressive_period: period on which _initial.
-        @type _progressive_period: timedelta
+        @type _lower_datetime: datetime
         @param _upper_datetime: initial relative time reference.
-        @type _upper_datetime: timedelta
+        @type _upper_datetime: datetime
 
-        Technical note on timedeltas: only days, seconds and microseconds are stored internally.
     """
-    def __init__(self, _lower_datetime=None, _progressive_period=None, _upper_datetime=None):
+    def __init__(self, _lower_datetime=None, _upper_datetime=None):
         if _lower_datetime:
             if not isinstance(_lower_datetime, datetime):
                 raise UserWarning("lower date parameter must be of {}.".format(datetime))
         self.lower_datetime = _lower_datetime  # date NULL
-
-        if _progressive_period:
-            if not isinstance(_progressive_period, timedelta):
-                raise UserWarning("progressive period parameter must be of {}.".format(timedelta))
-        self.progressive_period = _progressive_period  # timedelta NULL
 
         if _upper_datetime:
             if not isinstance(_upper_datetime, datetime):
@@ -76,12 +68,12 @@ class Perioder():
         _upper_bound = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
 
         if self.lower_datetime:
-            if self.lower_datetime < _lower_bound:
-                _lower_date = self.lower_datetime
+            if self.lower_datetime > _lower_bound:
+                _lower_datetime = self.lower_datetime
             else:
-                _lower_date = _lower_bound
+                _lower_datetime = _lower_bound
         else:
-            _lower_date = _lower_bound
+            _lower_datetime = _lower_bound
 
         if self.upper_datetime:
             if self.upper_datetime <= _upper_bound:
@@ -92,21 +84,15 @@ class Perioder():
             _upper_date = None
 
         _return = []
-        if self.progressive_period:
-            _current = _lower_date
-            while _current <= _upper_date:
-                if _current >= _lower_date:
-                    _return.append((_current, None))
-                _current += timedelta(
-                    days=self.progressive_period.days,
-                    seconds=self.progressive_period.seconds,
-                    microseconds=self.progressive_period.microseconds
-                )
-        else:
-            _return.append((_lower_date, _upper_date))
+        _current = _lower_datetime
+        while _current <= _upper_date:
+            _current_as_timedelta = _current - _lower_bound
+            _return.append(Period(_offset=_current_as_timedelta).__transform__(_year, _month))
+            _current += timedelta(days=1)
+            if _current > _upper_date:
+                _current = _upper_date
 
-        _return_set = set([x[1] for x in _return])
-        return _return, len(_return_set) == 1 and not list(_return_set)[0]
+        return _return
 
 
 

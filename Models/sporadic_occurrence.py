@@ -7,7 +7,7 @@ from Utils.constants import Constants
 import calendar
 
 
-class Period():
+class SporadicOccurrence():
     """ constructor of the class
 
         @param _offset: relative positive offset from first day of a specific month.
@@ -41,40 +41,25 @@ class Period():
         else:
             self.onward = False
 
-    def __transform__(self, _year, _month):
+    def __transform__(self, month_planning):
         _map = dict()  # map { day_number: [off_time_slots]}
-        _lowest = datetime(_year, _month, 1)
+        _lowest, _highest = month_planning.__first_last_key_dates__()
         if self.offset:
             _lowest += self.offset
-        _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
+
         _datetimes = []
 
         _current = _lowest  # initialization
         if self.progressive_period:
-            while _lowest <= _current <= _uppest:
+            while _lowest <= _current <= _highest:
                 _datetimes.append(_current)
                 _current += self.progressive_period
         else:
             _datetimes.append(_current)
 
-        for _day in range(_lowest.day, _uppest.day + 1):
-            _referential = datetime(_year, _month, _day)
-            for _datetime in _datetimes:
-                if _datetime.date() == _referential.date():
-                    if not _datetime.time():
-                        _map[_day] = TimeSlot.flags()  # all day included
-                    else:
-                        _fragment = {_day: []}
-                        for _time_slot in Constants.slots_temporally:
-                            _lower, _upper = Constants.slots_temporally[_time_slot]
-                            if self.onward:  # all time slot AFTER _datetime are included
-                                if _referential + _lower >= _datetime:  # started slot are earned
-                                    _fragment[_day].append(_time_slot)
-                            else:  # all time slot BEFORE _datetime are included
-                                if _referential + _upper <= _datetime:
-                                    _fragment[_day].append(_time_slot)
-                        if _fragment[_day]:
-                            _map[_day] = _fragment[_day]
+        for _datetime in _datetimes:
+            _map[_datetime] = TimeSlot.flags()  # all day included
+
         return _map
 
 

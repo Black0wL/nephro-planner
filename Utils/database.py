@@ -1,10 +1,11 @@
 __author__ = "Christophe"
 
 
-from Models.perioder import Perioder
+from Models.date_duration import DateDuration
+from Models.sporadic_occurrence import SporadicOccurrence
 from collections import Counter
-from timedelta_extension import timedelta
-from datetime import date, datetime
+from datetime import date
+from Utils.timedelta_extension import timedelta
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 import sqlite3
@@ -115,10 +116,10 @@ class Database:
                         ]
                     }
                 }, _holidays=[
+                    date(2014, 12, 5),  # TODO: DELETE!
                     date(2014, 12, 7),  # TODO: DELETE!
-                    # Period(timedelta(days=10, hours=5), timedelta(days=7)),  # TODO: DELETE!
-                    Perioder(_lower_datetime=datetime(2014, 12, 10), _upper_datetime=datetime(2014, 12, 20)),  # TODO: DELETE!
-                    date(2014, 12, 5)  # TODO: DELETE!
+                    SporadicOccurrence(timedelta(days=3), timedelta(days=7)),  # TODO: DELETE!
+                    DateDuration(_lower_date=date(2014, 12, 25), _upper_date=date(2015, 1, 7))  # TODO: DELETE!
                 ], _counters=Counter({
                     # Activity.OBLIGATION_WEEKEND: 7,  # TODO: DELETE!
                     # Activity.NEPHROLOGY: 13  # TODO: DELETE!

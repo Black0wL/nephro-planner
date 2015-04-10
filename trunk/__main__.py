@@ -23,8 +23,8 @@ def main():
         return
         '''
 
-        year = 2014
-        month = 12
+        year = 2015
+        month = 7
         month_planning = MonthlyPlanning(year, month)
         # print(month_planning)
         # for item in month_planning.iterate():
@@ -32,7 +32,7 @@ def main():
 
         holidays = dict()
         for x in Database.team():
-            holidays[x.id] = x.__holidays__(month, year)  # computing holidays for nephrologists
+            holidays[x.id] = x.__holidays__(month_planning)  # computing holidays for nephrologists
             print(repr(x) + ": ")
             for holiday in sorted(holidays[x.id]):
                 print("\t" + str(holiday) + ": " + "|".join([y.name[0] for y in holidays[x.id][holiday]]))

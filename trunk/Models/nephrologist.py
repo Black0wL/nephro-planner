@@ -5,9 +5,8 @@ from Utils.constants import Constants
 from Utils.database import Database
 from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
-from Models.period import Period
-from Models.perioder import Perioder
-from Models.duration import Duration
+from Models.sporadic_occurrence import SporadicOccurrence
+from Models.date_duration import DateDuration
 from datetime import date
 from datetime import datetime, timedelta
 from collections import Counter
@@ -80,23 +79,21 @@ class Nephrologist(object):
         return self.individual_counters
 
     # TODO: take into account month overflow if applicable
-    def __holidays__(self, _month, _year):
+    def __holidays__(self, month_planning):
         _map = dict()  # map { day_number: [off_time_slots]}
-        _lowest = datetime(_year, _month, 1)
-        _uppest = datetime(_year, _month, calendar.monthrange(_year, _month)[1]) + timedelta(days=1, microseconds=-1)
+        _lowest = datetime(month_planning.year, month_planning.month, 1)
+        _uppest = datetime(month_planning.year, month_planning.month, calendar.monthrange(month_planning.year, month_planning.month)[1]) + timedelta(days=1, microseconds=-1)
 
         for _blob in self.holidays:
             switch = {
-                date: lambda: {_blob.day: TimeSlot.flags()} if _lowest.date() <= _blob <= _uppest.date() else [],
-                Period: lambda: _blob.__transform__(_year, _month),
-                Perioder: lambda: _blob.__transform__(_year, _month),
-                Duration: lambda: _blob.__transform__(_year, _month)
+                date: lambda: {_blob: TimeSlot.flags()} if _lowest.date() <= _blob <= _uppest.date() else [],
+                SporadicOccurrence: lambda: _blob.__transform__(month_planning),
+                DateDuration: lambda: _blob.__transform__(month_planning)
             }
             fuse = [(x, isinstance(_blob, x)) for x in switch]
             if any([x[1] for x in fuse]):
                 _slots = switch[[x[0] for x in fuse if x[1]][0]]()
 
-                print(_slots)
                 for day_slot in _slots:
                     if day_slot not in _map:
                         _map[day_slot] = set()

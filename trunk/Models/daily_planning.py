@@ -8,6 +8,7 @@ from Enums.timeslot import TimeSlot
 from Utils.database import Database
 import copy
 from constraint import *
+from datetime import timedelta
 
 
 def singleton(cls):
@@ -123,8 +124,15 @@ class DailyPlanning():
                 # print(repr(solution[self.nephrologist_key]) + "|" + str(solution[self.activity_key].name) + ": " + str(solution[self.nephrologist_key].counters()[solution[self.activity_key]]))
                 current_nephrologist.counters()[current_activity] += 1
 
-    def __team_problem__(self, current_timeslot, holidays):
-        current_team = [x for x in Database.team() if (x.id not in holidays or self.date.day not in holidays[x.id] or current_timeslot not in holidays[x.id][self.date.day]) and x.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
+    def __is_in_holiday__(self, nephrologist, current_timeslot, holidays, day_offset=0):
+        return nephrologist.id in holidays and (self.date + timedelta(days=day_offset)) in holidays[nephrologist.id] and current_timeslot in holidays[nephrologist.id][(self.date + timedelta(days=day_offset))]
+
+    def __team_problem__(self, current_timeslot, holidays, offset_range=[]):
+        current_team = [x for x in Database.team() if x.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
+        # check whether nephrologist is scheduled for vacation for current day + days before/after in the offset range
+        for offset in list(set([0]) | set(offset_range)):
+            current_team = [x for x in current_team if not self.__is_in_holiday__(x, current_timeslot, holidays, offset)]
+
         current_activities = [x for x in self.profile[current_timeslot] if not self.isCurrentlyAllocatedActivity(current_timeslot, x)]
 
         if len(current_team) > 0 and len(current_activities) > 0:
@@ -163,7 +171,7 @@ class DailyPlanning():
 
                 if self.weekday == 4:  # friday
                     if current_timeslot == TimeSlot.FIRST_SHIFT:
-                        current_team, problem = self.__team_problem__(current_timeslot, holidays)
+                        current_team, problem = self.__team_problem__(current_timeslot, holidays, range(1, 4))
 
                         if problem is not None:
                             # nephrologist has to have clearance for following activities: Activity.OTHERS, Activity.DIALYSIS

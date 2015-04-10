@@ -34,11 +34,13 @@ class MonthlyPlanning():
         for _date in [date(_year, _month, day) for day in range(1, calendar.monthrange(_year, _month)[1]+1)]:
             self.daily_plannings[_date] = DailyPlanning(_date)
 
-        _date = sorted(self.daily_plannings.keys())[len(self.daily_plannings)-1]
-        _index = _date.weekday()
-        if _index > 3:  # if last month's day is friday, saturday or sunday (unusual day)
+        # adding to the month's days the potentially additional overflowing days
+        first_date, last_date = self.__first_last_key_dates__()
+
+        _index = self.daily_plannings[last_date].weekday  # getting last key date's weekday index
+        if _index in [4, 5, 6]:  # if last month's day is friday, saturday or sunday (unusual day)
             for _day in range(1, 6-_index+1):
-                _date = (datetime(_date.year, _date.month, _day) + timedelta(days=1)).date()
+                _date = last_date + timedelta(days=_day)
                 self.daily_plannings[_date] = DailyPlanning(_date)
 
         """
@@ -71,6 +73,9 @@ class MonthlyPlanning():
                     row[3]
                 )
         """
+
+    def __first_last_key_dates__(self):
+        return sorted(self.daily_plannings.keys())[::len(self.daily_plannings)-1]  # takes first and last of keys
 
     def iterate(self):
         from itertools import chain, repeat, islice

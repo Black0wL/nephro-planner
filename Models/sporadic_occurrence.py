@@ -61,30 +61,3 @@ class SporadicOccurrence():
             _map[_datetime] = TimeSlot.flags()  # all day included
 
         return _map
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

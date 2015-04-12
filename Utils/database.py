@@ -38,6 +38,14 @@ class Database:
                         ]
                     }
                 }, _aversions={
+                    0: {  # monday
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
+                        ],
+                        TimeSlot.SECOND_SHIFT: [
+                            Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
+                        ]
+                    },
                     1: {  # tuesday
                         TimeSlot.FIRST_SHIFT: [
                             Activity.NEPHROLOGY  # TODO: DELETE!

@@ -8,7 +8,7 @@ from Enums.timeslot import TimeSlot
 from Models.sporadic_occurrence import SporadicOccurrence
 from Models.date_duration import DateDuration
 from datetime import date
-from datetime import datetime, timedelta
+from free_slots import FreeSlots
 from collections import Counter
 import copy
 import sqlite3
@@ -81,12 +81,12 @@ class Nephrologist(object):
     # TODO: take into account month overflow if applicable
     def __holidays__(self, month_planning):
         _map = dict()  # map { day_number: [off_time_slots]}
-        _lowest = datetime(month_planning.year, month_planning.month, 1)
-        _uppest = datetime(month_planning.year, month_planning.month, calendar.monthrange(month_planning.year, month_planning.month)[1]) + timedelta(days=1, microseconds=-1)
+        _lowest, _highest = month_planning.__first_last_key_dates__()
 
         for _blob in self.holidays:
             switch = {
-                date: lambda: {_blob: TimeSlot.flags()} if _lowest.date() <= _blob <= _uppest.date() else [],
+                date: lambda: {_blob: TimeSlot.flags()} if _lowest <= _blob <= _highest else dict(),
+                FreeSlots: lambda: _blob.__transform__(month_planning),
                 SporadicOccurrence: lambda: _blob.__transform__(month_planning),
                 DateDuration: lambda: _blob.__transform__(month_planning)
             }

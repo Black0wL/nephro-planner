@@ -9,6 +9,8 @@ from Utils.database import Database
 import copy
 from constraint import *
 from datetime import timedelta
+from random import randint
+from Models.free_slots import FreeSlots
 
 
 def singleton(cls):
@@ -45,41 +47,6 @@ class DailyPlanning():
         if not self.profile:
             raise UserWarning("daily planning's profile has not been successfully resolved.")
 
-    '''
-    def __allocate__(self, _time_slot_type, _activity_type, _id_nephrologist):
-        if type(_time_slot_type) is not TimeSlot:
-            raise UserWarning("{} parameter must be of type {}.".format(
-                DailyPlanning.__allocate__.func_code.co_varnames[1],
-                TimeSlot
-            ))
-        elif type(_time_slot_type) is not Activity:
-            raise UserWarning("{} parameter must be of type {}.".format(
-                DailyPlanning.__allocate__.func_code.co_varnames[2],
-                Activity
-            ))
-        elif type(_id_nephrologist) is not int:
-            raise UserWarning("{} parameter must be of type {}.".format(
-                DailyPlanning.__allocate__.func_code.co_varnames[3],
-                int
-            ))
-        elif not self.profile:
-            raise UserWarning("daily planning's profile is None.")
-        else:
-            if _time_slot_type.name not in self.profile:
-                raise UserWarning("daily planning's profile does not contain time slot {}.".format(
-                    _time_slot_type
-                ))
-            elif _activity_type.name not in self.profile[_time_slot_type.name]:
-                raise UserWarning("daily planning's profile does not contain activity type {} for time slot {}.".format(
-                    _activity_type,
-                    _time_slot_type
-                ))
-            else:
-                # TODO: detect whether time slot for activity is already allocated!
-                self.profile[_time_slot_type.name][_activity_type.name] = _id_nephrologist
-        return self
-    '''
-
     def __str__(self):
         import re
 
@@ -95,6 +62,7 @@ class DailyPlanning():
             render += " "
         return render
 
+    '''
     def counters(self, _reset=False):  # basically inverse the day profile, eluding time slots on the run
         if _reset:
             self.individual_counters = None
@@ -104,11 +72,12 @@ class DailyPlanning():
             for (nep_id, act_type) in [(self.profile[tim][act].id, act) for tim in self.profile for act in self.profile[tim] if self.profile[tim][act] is not None]:
                 self.individual_counters[nep_id][act_type] += 1
         return self.individual_counters
+    '''
 
-    def currentlyAllocatedNephrologists(self, current_timeslot):
+    def __currently_allocated_nephrologists__(self, current_timeslot):
         return [self.profile[current_timeslot][act].id for act in self.profile[current_timeslot] if self.profile[current_timeslot][act] is not None]
 
-    def isCurrentlyAllocatedActivity(self, current_timeslot, current_activity):
+    def __is_currently_allocated_activity__(self, current_timeslot, current_activity):
         return self.profile[current_timeslot][current_activity] is not None
 
     def restrictedToClearanceTeam(self, current_team, current_activity):
@@ -119,21 +88,20 @@ class DailyPlanning():
 
     def __slot__(self, current_timeslot, current_activity, current_nephrologist):
         if current_nephrologist is not None:
-            if not self.isCurrentlyAllocatedActivity(current_timeslot, current_activity):
+            if not self.__is_currently_allocated_activity__(current_timeslot, current_activity):
                 self.profile[current_timeslot][current_activity] = current_nephrologist
-                # print(repr(solution[self.nephrologist_key]) + "|" + str(solution[self.activity_key].name) + ": " + str(solution[self.nephrologist_key].counters()[solution[self.activity_key]]))
                 current_nephrologist.counters()[current_activity] += 1
 
     def __is_in_holiday__(self, nephrologist, current_timeslot, holidays, day_offset=0):
         return nephrologist.id in holidays and (self.date + timedelta(days=day_offset)) in holidays[nephrologist.id] and current_timeslot in holidays[nephrologist.id][(self.date + timedelta(days=day_offset))]
 
     def __team_problem__(self, current_timeslot, holidays, offset_range=[]):
-        current_team = [x for x in Database.team() if x.id not in self.currentlyAllocatedNephrologists(current_timeslot)]
+        current_team = [x for x in Database.team() if x.id not in self.__currently_allocated_nephrologists__(current_timeslot)]
         # check whether nephrologist is scheduled for vacation for current day + days before/after in the offset range
         for offset in list(set([0]) | set(offset_range)):
             current_team = [x for x in current_team if not self.__is_in_holiday__(x, current_timeslot, holidays, offset)]
 
-        current_activities = [x for x in self.profile[current_timeslot] if not self.isCurrentlyAllocatedActivity(current_timeslot, x)]
+        current_activities = [x for x in self.profile[current_timeslot] if not self.__is_currently_allocated_activity__(current_timeslot, x)]
 
         if len(current_team) > 0 and len(current_activities) > 0:
             # instantiate a new problem
@@ -174,8 +142,8 @@ class DailyPlanning():
                         current_team, problem = self.__team_problem__(current_timeslot, holidays, range(1, 4))
 
                         if problem is not None:
-                            # nephrologist has to have clearance for following activities: Activity.OTHERS, Activity.DIALYSIS
-                            problem.addConstraint(lambda nep, act: Activity.OTHERS in nep.activities and Activity.DIALYSIS in nep.activities, (self.nephrologist_key, self.activity_key))
+                            # nephrologist has to have clearance for following activities: Activity.OTHERS, Activity.DIALYSIS, Activity.OBLIGATION
+                            problem.addConstraint(lambda nep: Activity.OTHERS in nep.activities and Activity.DIALYSIS in nep.activities and Activity.OBLIGATION in nep.activities, (self.nephrologist_key))
 
                             # nephrologist with lesser contribution to weekend obligation activity is selected
                             problem.addConstraint(lambda nep: True in [self.__is_most_rested_nephrologist__(current_team, nep, Activity.OBLIGATION_WEEKEND)], (self.nephrologist_key))
@@ -184,17 +152,43 @@ class DailyPlanning():
                             if len(solutions) > 0:
                                 current_shift_activities = list(set([Activity.OTHERS] + self.obligation_activities) & set([x for x in self.profile[current_timeslot]]))
                                 if len(current_shift_activities) == 1:
-                                    self.__slot__(current_timeslot, current_shift_activities[0], solutions[0][self.nephrologist_key])
+                                    # extracting the nephrologist resolved from the constraint problem solving
+                                    eligible_one = solutions[0][self.nephrologist_key]
+
+                                    # allocating the nephrologist on his TimeSlot.FIRST_SHIFT for Activity.OTHERS
+                                    self.__slot__(current_timeslot, current_shift_activities[0], eligible_one)
+
+                                    # allocating the recovery shift to nephrologist under obligation for next week.
+                                    recovery_shift = None
+                                    recovery_preferences = [(x, y) for x in eligible_one.preferences for y in eligible_one.preferences[x] if Activity.OBLIGATION_RECOVERY in eligible_one.preferences[x][y]]
+                                    if len(recovery_preferences) == 0:  # eligible nephrologist has no preferences for obligation recovery
+                                        # generating all possible recovery shifts for the eligible nephrologist within day [0, 4] for Activity.OBLIGATION_RECOVERY that has not a negative score
+                                        recovery_possibilities = [(x, y) for x in [0, 1, 2, 3, 4] for y in [TimeSlot.FIRST_SHIFT, TimeSlot.SECOND_SHIFT] if eligible_one.score(x, y, Activity.OBLIGATION_RECOVERY) == 0]
+                                        # picking one randomly out of all the possible shifts list
+                                        if len(recovery_possibilities) > 0:
+                                            recovery_shift = recovery_possibilities[randint(0, len(recovery_possibilities)-1)]
+                                    else:  # eligible nephrologist has at least one preferential shift for Activity.OBLIGATION_RECOVERY
+                                        # picking one preference out of the preference list in a random fashion
+                                        recovery_shift = recovery_preferences[randint(0, len(recovery_preferences)-1)]
+
+                                    # TODO: recompute holidays to take modification into account!
+                                    print(str(eligible_one) + ": " + str(recovery_shift))
+                                    if recovery_shift is not None:
+                                        recovery_index_day, recovery_slot = recovery_shift
+                                        eligible_one.holidays.append(FreeSlots(self.date + timedelta(days=3+recovery_index_day), [recovery_slot]))
                     else:
+                        # retrieving the nephrologist allocated for imminent weekend obligation
                         last_shift_activities = list(set([Activity.OTHERS] + self.obligation_activities) & set([x for x in self.profile[TimeSlot.FIRST_SHIFT]]))
                         if len(last_shift_activities) == 1:
                             if current_timeslot == TimeSlot.SECOND_SHIFT:
                                 current_shift_activities = list(set([Activity.DIALYSIS] + self.obligation_activities) & set([x for x in self.profile[current_timeslot]]))
                                 if len(current_shift_activities) == 1:
+                                    # allocating the nephrologist on his TimeSlot.SECOND_SHIFT for Activity.DIALYSIS
                                     self.__slot__(current_timeslot, current_shift_activities[0], self.profile[TimeSlot.FIRST_SHIFT][last_shift_activities[0]])
                             elif current_timeslot == TimeSlot.THIRD_SHIFT:
                                 current_shift_activities = list(set([Activity.OBLIGATION] + self.obligation_activities) & set([x for x in self.profile[current_timeslot]]))
                                 if len(current_shift_activities) == 1:
+                                    # allocating the nephrologist on his TimeSlot.THIRD_SHIFT for Activity.OBLIGATION
                                     self.__slot__(current_timeslot, current_shift_activities[0], self.profile[TimeSlot.FIRST_SHIFT][last_shift_activities[0]])
                 elif self.weekday in [5, 6] and yesterday_profile is not None and TimeSlot.THIRD_SHIFT in yesterday_profile:  # saturday, sunday
                     yesterday_obligations = list(set(self.obligation_activities) & set([x for x in yesterday_profile[TimeSlot.THIRD_SHIFT]]))
@@ -245,7 +239,7 @@ class DailyPlanning():
                 solutions = problem.getSolutions()
 
                 for solution in solutions:
-                    if solution[self.nephrologist_key].id not in self.currentlyAllocatedNephrologists(current_timeslot):
+                    if solution[self.nephrologist_key].id not in self.__currently_allocated_nephrologists__(current_timeslot):
                         self.__slot__(current_timeslot, solution[self.activity_key], solution[self.nephrologist_key])
 
 '''

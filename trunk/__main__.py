@@ -33,14 +33,6 @@ def main():
         holidays = dict()
         for x in Database.team():
             holidays[x.id] = x.__holidays__(month_planning)  # computing holidays for nephrologists
-            print(repr(x) + ": ")
-            for holiday in sorted(holidays[x.id]):
-                print("\t" + str(holiday) + ": " + "|".join([y.name[0] for y in holidays[x.id][holiday]]))
-
-        '''
-        for x in Database.team():
-            print(repr(x) + ": " + str(x.activities))
-        '''
 
         for (yesterday, today) in month_planning.iterate():
             if yesterday is not None:
@@ -49,6 +41,12 @@ def main():
                 yesterday_profile = None
 
             current_daily_planning = month_planning.daily_plannings[date(today.year, today.month, today.day)]  # the daily planning for the current day
+
+            if current_daily_planning.weekday == 0:
+                # recomputing holidays to take obligation recovery into account
+                holidays = dict()
+                for x in Database.team():
+                    holidays[x.id] = x.__holidays__(month_planning)  # computing holidays for nephrologists
 
             # if today_date is weekend day or today_date is holiday
             if current_daily_planning.weekday in [4, 5, 6] or not current_daily_planning.is_working_day:
@@ -77,6 +75,12 @@ def main():
             # print(" | ".join([str(x) + ": " + str(x.counters()[Activity.OBLIGATION]) for x in Database.team()]))
             # month_planning.counters()  # counters MUST be updated before looping
             # print(Database.team()[0].counters())
+
+        for x in Database.team():
+            print(repr(x) + ": ")
+            for holiday in sorted(holidays[x.id]):
+                print("\t" + str(holiday) + ": " + "|".join([y.name[0] for y in holidays[x.id][holiday]]))
+
         print("------------------------------------------------------------")
         print(month_planning)
     finally:

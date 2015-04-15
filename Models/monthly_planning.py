@@ -1,6 +1,8 @@
 __author__ = "Christophe"
+# -*- coding: utf-8 -*-
 
 from Enums.timeslot import TimeSlot
+from Enums.constraint_strategy import ConstraintStrategy
 from Models.daily_planning import DailyPlanning
 import sqlite3
 from Utils.parameters import Parameters
@@ -8,6 +10,7 @@ from Utils.constants import Constants
 from Utils.database import Database
 from datetime import timedelta, date, datetime
 from collections import Counter
+from Enums.activity import Activity
 import calendar
 
 
@@ -30,8 +33,19 @@ class MonthlyPlanning():
         self.year = _year
         self.month = _month
         self.daily_plannings = dict()
+        self.human_readable_days = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi", "Dimanche"]
+        self.human_readable_months = ["Janvier","Février","Mars","Avril","Mai","Juin", "Juillet","Août","Septembre","Octobre","Novembre","Décembre"]
+        self.human_readable_activities = {
+            Activity.NEPHROLOGY: "NEPH",
+            Activity.DIALYSIS: "DIAL",
+            Activity.CONSULTATION: "CP",
+            Activity.OTHERS: "AA",
+            Activity.OBLIGATION: "ASTR",
+            Activity.OBLIGATION_HOLIDAY: "ASTR",
+            Activity.OBLIGATION_WEEKEND: "ASTR"
+        }
 
-        for _date in [date(_year, _month, day) for day in range(1, calendar.monthrange(_year, _month)[1]+1)]:
+        for _date in [date(_year, _month, day) for day in range(1, calendar.monthrange(_year, _month)[1] + 1)]:
             self.daily_plannings[_date] = DailyPlanning(_date)
 
         # adding to the month's days the potentially additional overflowing days
@@ -99,60 +113,255 @@ class MonthlyPlanning():
     def __str__(self):
         return "\n".join([str(self.daily_plannings[daily_planning]) for daily_planning in sorted(self.daily_plannings)])
 
-    '''
-    def counters(self, _reset=False):
-        if _reset:
-            self.individual_counters = None
-        if not self.individual_counters:
-            # TODO: call Nephrologist.team() instead of Database.team()
-            self.individual_counters = dict([(nep.id, Counter()) for nep in Database.team()])  # creating a new counters profile for each nephrologist
-            for (nep_id, _daily_planning_counters) in [(key_nep_id, self.daily_plannings[today].counters(_reset)) for today in self.daily_plannings for key_nep_id in self.individual_counters]:
-                if nep_id not in self.individual_counters:
-                    self.individual_counters[nep_id] = Counter()
-                self.individual_counters[nep_id] += _daily_planning_counters[nep_id]
-        return self.individual_counters
-    '''
+    def __compute__(self):
+        self.holidays = dict()
+        for x in Database.team():
+            self.holidays[x.id] = x.__holidays__(self)  # computing holidays for nephrologists
 
-    # TODO: implement proper rendering into excel spreadsheet
-    def output(self, filename, sheet_name, list1, list2, x, y, z):
-        import xlwt
-        book = xlwt.Workbook()
-        sh = book.add_sheet(sheet_name)
+        for (yesterday, today) in self.iterate():
+            if yesterday is not None:
+                yesterday_profile = self.daily_plannings[date(yesterday.year, yesterday.month, yesterday.day)].profile
+            else:
+                yesterday_profile = None
 
-        variables = [x, y, z]
-        x_desc = 'Display'
-        y_desc = 'Dominance'
-        z_desc = 'Test'
-        desc = [x_desc, y_desc, z_desc]
+            current_daily_planning = self.daily_plannings[date(today.year, today.month, today.day)]  # the daily planning for the current day
 
-        col1_name = 'Stimulus Time'
-        col2_name = 'Reaction Time'
+            if current_daily_planning.weekday == 0:
+                # recomputing holidays to take obligation recovery into account
+                self.holidays = dict()
+                for x in Database.team():
+                    self.holidays[x.id] = x.__holidays__(self)  # computing holidays for nephrologists
 
-        #You may need to group the variables together
-        #for n, (v_desc, v) in enumerate(zip(desc, variables)):
-        for n, v_desc, v in enumerate(zip(desc, variables)):
-            sh.write(n, 0, v_desc)
-            sh.write(n, 1, v)
+            # if today_date is weekend day or today_date is holiday
+            if current_daily_planning.weekday in [4, 5, 6] or not current_daily_planning.is_working_day:
+                # allocate all damn day in the same time
+                current_daily_planning.__allocate_whole_day__(ConstraintStrategy.ALLOCATE_WEEKEND_DAYS.value, yesterday_profile, self.holidays)
+                current_daily_planning.__allocate_whole_day__(ConstraintStrategy.ALLOCATE_HOLIDAYS.value, yesterday_profile, self.holidays)
 
-        n+=1
+            # allocate all day's timeslots separately
+            for current_timeslot in current_daily_planning.profile:
+                if current_daily_planning.weekday in [0, 5, 6]:
+                    current_daily_planning.__allocate_timeslot__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, current_timeslot, self.holidays)
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, current_timeslot, self.holidays)
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.NONE.value, yesterday_profile, current_timeslot, self.holidays)
 
-        sh.write(n, 0, col1_name)
-        sh.write(n, 1, col2_name)
+    def output(self):
+        from xlrd import open_workbook
+        from xlwt import Workbook, XFStyle, Borders, Alignment, Font, Pattern, Style, easyxf
+        from xlutils.copy import copy
 
-        for m, e1 in enumerate(list1, n+1):
-            sh.write(m, 0, e1)
+        '''
+        rb = open_workbook(r"Templates\template.xls")
+        wb = copy(rb)
 
-        for m, e2 in enumerate(list2, n+1):
-            sh.write(m, 1, e2)
+        s = wb.get_sheet(0)
+        s.write(0, 0, 'A1')
+        wb.save(r"C:\Temp\nephro-planner\new.xls")
+        '''
 
-        book.save(filename)
+        book = Workbook(encoding="utf-8")
+        sheet = book.add_sheet(r"Feuille1")
 
+        style_title = XFStyle()
+        font_title = Font()
+        font_title.name = "Comic Sans MS"
+        font_title.height = 280
+        style_title.font = font_title
+        style_title.alignment.horz = Alignment.HORZ_CENTER
+        style_title.alignment.vert = Alignment.VERT_CENTER
 
+        style_cell_bottom = XFStyle()
+        borders_cell_bottom  = Borders()
+        borders_cell_bottom .bottom = Borders.MEDIUM
+        style_cell_bottom.borders = borders_cell_bottom
 
+        style_header = XFStyle()
+        font_header = Font()
+        font_header.bold = 1
+        font_header.name = "Arial Narrow"
+        font_header.height = 240
+        style_header.font = font_header
+        style_header.alignment.horz = Alignment.HORZ_CENTER
+        style_header.alignment.vert = Alignment.VERT_CENTER
+        borders_header = Borders()
+        borders_header.top = Borders.MEDIUM
+        borders_header.left = Borders.MEDIUM
+        borders_header.bottom = Borders.MEDIUM
+        borders_header.right = Borders.MEDIUM
+        style_header.borders = borders_header
 
+        style_sub_header = XFStyle()
+        font_sub_header = Font()
+        font_sub_header.name = "Arial Narrow"
+        font_sub_header.height = 240
+        style_sub_header.font = font_sub_header
+        style_sub_header.alignment.horz = Alignment.HORZ_CENTER
+        style_sub_header.alignment.vert = Alignment.VERT_CENTER
+        borders_sub_header = Borders()
+        borders_sub_header.top = Borders.MEDIUM
+        borders_sub_header.left = Borders.MEDIUM
+        borders_sub_header.bottom = Borders.MEDIUM
+        borders_sub_header.right = Borders.MEDIUM
+        style_sub_header.borders = borders_sub_header
 
+        style_date = XFStyle()
+        font_date = Font()
+        font_date.name = "Arial Narrow"
+        font_date.height = 240
+        style_date.font = font_date
+        style_date.alignment.horz = Alignment.HORZ_RIGHT
+        style_date.alignment.vert = Alignment.VERT_CENTER
+        borders_date = Borders()
+        borders_date.left = Borders.MEDIUM
+        style_date.borders = borders_date
 
+        style_date_status = XFStyle()
+        font_date_status = Font()
+        font_date_status.name = "Arial Narrow"
+        font_date_status.height = 240
+        style_date_status.font = font_date_status
+        style_date_status.alignment.horz = Alignment.HORZ_LEFT
+        style_date_status.alignment.vert = Alignment.VERT_CENTER
+        borders_date_status = Borders()
+        borders_date_status.right = Borders.MEDIUM
+        style_date_status.borders = borders_date_status
 
+        style_cell_normal = XFStyle()
+        font_cell_normal = Font()
+        font_cell_normal.name = "Arial Narrow"
+        font_cell_normal.height = 220
+        style_cell_normal.font = font_cell_normal
+        style_cell_normal.alignment.horz = Alignment.HORZ_CENTER
+        style_cell_normal.alignment.vert = Alignment.VERT_CENTER
+        borders_cell_normal = Borders()
+        style_cell_normal.borders = borders_cell_normal
+
+        style_cell_right = XFStyle()
+        font_cell_right = Font()
+        font_cell_right.name = "Arial Narrow"
+        font_cell_right.height = 220
+        style_cell_right.font = font_cell_right
+        style_cell_right.alignment.horz = Alignment.HORZ_CENTER
+        style_cell_right.alignment.vert = Alignment.VERT_CENTER
+        borders_cell_right = Borders()
+        borders_cell_right.right = Borders.MEDIUM
+        style_cell_right.borders = borders_cell_right
+
+        style_cell_top = XFStyle()
+        borders_cell_top = Borders()
+        borders_cell_top.top = Borders.MEDIUM
+        style_cell_top.borders = borders_cell_top
+
+        column_offset = 1
+        date_column_offset = 2
+        row_offset = 1
+        table_width = 1 + 3 * len(Database.team())
+
+        # build titles
+        sheet.write_merge(row_offset, row_offset, column_offset, table_width + 1, "POLE MEDECINE INTERNE", style_title)
+        sheet.write_merge(row_offset + 1, row_offset + 1, column_offset, table_width + 1, "Service NEPHROLOGIE – HEMODIALYSE", style_title)
+        sheet.write_merge(row_offset + 2, row_offset + 2, column_offset, table_width + 1, "Planning de {0} {1}".format(self.human_readable_months[self.month - 1], self.year), style_title)
+
+        # patch date columns top borders
+        sheet.write(row_offset + 5, column_offset, "", style_cell_bottom)
+        sheet.write(row_offset + 5, column_offset + 1, "", style_cell_bottom)
+
+        # build header and sub header
+        for x in Database.team():
+            sheet.write_merge(row_offset + 4, row_offset + 4, column_offset + date_column_offset + 3 * (x.id - 1), column_offset + date_column_offset + 3 * x.id - 1, x.name, style_header)
+            sheet.write(row_offset + 5, column_offset + date_column_offset + 3 * (x.id - 1), "M", style_sub_header)
+            sheet.write(row_offset + 5, column_offset + date_column_offset + 3 * (x.id - 1) + 1, "AM", style_sub_header)
+            sheet.write(row_offset + 5, column_offset + date_column_offset + 3 * (x.id - 1) + 2, "N", style_sub_header)
+
+        '''
+        i = 40
+        for x in sorted(Style.colour_map):
+            style = XFStyle()
+            pattern = Pattern()
+            pattern.pattern = Pattern.SOLID_PATTERN
+            pattern.pattern_fore_colour = Style.colour_map[x]
+            style.pattern = pattern
+            sheet.write(i, 1, x, style)
+            i += 1
+        '''
+
+        pattern_pale_blue = Pattern()
+        pattern_pale_blue.pattern = Pattern.SOLID_PATTERN
+        pattern_pale_blue.pattern_fore_colour = Style.colour_map['pale_blue']
+
+        pattern_light_yellow = Pattern()
+        pattern_light_yellow.pattern = Pattern.SOLID_PATTERN
+        pattern_light_yellow.pattern_fore_colour = Style.colour_map['light_yellow']
+
+        pattern_ice_blue = Pattern()
+        pattern_ice_blue.pattern = Pattern.SOLID_PATTERN
+        pattern_ice_blue.pattern_fore_colour = Style.colour_map['ice_blue']
+
+        pattern_light_green = Pattern()
+        pattern_light_green.pattern = Pattern.SOLID_PATTERN
+        pattern_light_green.pattern_fore_colour = Style.colour_map['light_green']
+
+        pattern_ivory = Pattern()
+        pattern_ivory.pattern = Pattern.SOLID_PATTERN
+        pattern_ivory.pattern_fore_colour = Style.colour_map['ivory']
+
+        pattern_tan = Pattern()
+        pattern_tan.pattern = Pattern.SOLID_PATTERN
+        pattern_tan.pattern_fore_colour = Style.colour_map['tan']
+
+        pattern_gold = Pattern()
+        pattern_gold.pattern = Pattern.SOLID_PATTERN
+        pattern_gold.pattern_fore_colour = Style.colour_map['gold']
+
+        def __cell_colouration__(style, current_activity):
+            if current_activity is Activity.CONSULTATION:
+                style.pattern = pattern_pale_blue
+            elif current_activity is Activity.DIALYSIS:
+                style.pattern = pattern_ice_blue
+            elif current_activity is Activity.NEPHROLOGY:
+                style.pattern = pattern_light_green
+            elif current_activity is Activity.OTHERS:
+                style.pattern = pattern_tan
+            elif current_activity is Activity.OBLIGATION:
+                style.pattern = pattern_ivory
+            elif current_activity is Activity.OBLIGATION_WEEKEND:
+                style.pattern = pattern_light_yellow
+            elif current_activity is Activity.OBLIGATION_HOLIDAY:
+                style.pattern = pattern_gold
+            else:
+                style.pattern = Pattern()
+            return style
+
+        import copy
+
+        last_day = calendar.monthrange(self.year, self.month)[1]
+        for x in range(1, last_day + 1):
+            current_date = date(self.year, self.month, x)
+            current_daily_planning = self.daily_plannings[current_date]
+
+            # build date and date status columns
+            sheet.write(row_offset + 5 + x, column_offset, "{0}. {1}".format(self.human_readable_days[current_daily_planning.weekday][0:3].lower(), x), style_date)
+            if current_daily_planning.weekday in [5, 6]:
+                sheet.write(row_offset + 5 + x, column_offset + 1, "WK", style_date_status)
+            elif not current_daily_planning.is_working_day:
+                sheet.write(row_offset + 5 + x, column_offset + 1, "Férié", style_date_status)
+            else:
+                sheet.write(row_offset + 5 + x, column_offset + 1, "", style_date_status)
+
+            # fill in month planning
+            for y in Database.team():
+                current_activity = current_daily_planning.__get_activity__(TimeSlot.FIRST_SHIFT, y)
+                sheet.write(row_offset + 5 + x, column_offset + date_column_offset + 3 * (y.id - 1), self.human_readable_activities[current_activity] if current_activity else "", __cell_colouration__(style_cell_normal, current_activity))
+                current_activity = current_daily_planning.__get_activity__(TimeSlot.SECOND_SHIFT, y)
+                sheet.write(row_offset + 5 + x, column_offset + date_column_offset + 1 + 3 * (y.id - 1), self.human_readable_activities[current_activity] if current_activity else "", __cell_colouration__(style_cell_normal, current_activity))
+                current_activity = current_daily_planning.__get_activity__(TimeSlot.THIRD_SHIFT, y)
+                sheet.write(row_offset + 5 + x, column_offset + date_column_offset + 2 + 3 * (y.id - 1), self.human_readable_activities[current_activity] if current_activity else "", __cell_colouration__(style_cell_right, current_activity))
+
+        # patch table bottom border
+        for x in range(0, table_width + 1):
+            sheet.write(row_offset + 5 + (last_day + 1), column_offset + x, "", style_cell_top)
+
+        book.save(r"C:\Temp\nephro-planner\new.xls")
 
 
 

@@ -1,4 +1,5 @@
 __author__ = "Christophe"
+# -*- coding: utf-8 -*-
 
 
 from Models.date_duration import DateDuration
@@ -40,15 +41,15 @@ class Database:
                 }, _aversions={
                     0: {  # monday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
+                            # Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
                         ],
                         TimeSlot.SECOND_SHIFT: [
-                            Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
+                            # Activity.OBLIGATION_RECOVERY  # TODO: DELETE!
                         ]
                     },
                     1: {  # tuesday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.NEPHROLOGY  # TODO: DELETE!
+                            # Activity.NEPHROLOGY  # TODO: DELETE!
                         ],
                         TimeSlot.THIRD_SHIFT: [
                             Activity.OBLIGATION
@@ -62,8 +63,8 @@ class Database:
                 Nephrologist(2, "Christine", _preferences={
                     0: {  # monday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.OTHERS,  # TODO: DELETE!
-                            Activity.DIALYSIS  # TODO: DELETE!
+                            # Activity.OTHERS,  # TODO: DELETE!
+                            # Activity.DIALYSIS  # TODO: DELETE!
                         ]
                     },
                     2: {  # wednesday
@@ -92,7 +93,7 @@ class Database:
                     # Activity.OBLIGATION: 9,  # TODO: DELETE!
                     # Activity.NEPHROLOGY: 11  # TODO: DELETE!
                 })),
-                Nephrologist(3, "Severine", _preferences={
+                Nephrologist(3, "Séverine", _preferences={
                     0: {  # monday
                         TimeSlot.SECOND_SHIFT: [
                             Activity.CONSULTATION
@@ -117,27 +118,27 @@ class Database:
                 }, _aversions={
                     0: {  # monday
                         TimeSlot.FIRST_SHIFT: [
-                            Activity.NEPHROLOGY  # TODO: DELETE!
+                            # Activity.NEPHROLOGY  # TODO: DELETE!
                         ],
                         TimeSlot.THIRD_SHIFT: [
                             Activity.OBLIGATION
                         ]
                     }
                 }, _holidays=[
-                    date(2014, 12, 5),  # TODO: DELETE!
-                    date(2014, 12, 7),  # TODO: DELETE!
-                    SporadicOccurrence(timedelta(days=3), timedelta(days=7)),  # TODO: DELETE!
-                    DateDuration(_lower_date=date(2014, 12, 25), _upper_date=date(2015, 1, 7))  # TODO: DELETE!
+                    # date(2014, 12, 5),  # TODO: DELETE!
+                    # date(2014, 12, 7),  # TODO: DELETE!
+                    # SporadicOccurrence(timedelta(days=3), timedelta(days=7)),  # TODO: DELETE!
+                    # DateDuration(_lower_date=date(2014, 12, 25), _upper_date=date(2015, 1, 7))  # TODO: DELETE!
                 ], _counters=Counter({
                     # Activity.OBLIGATION_WEEKEND: 7,  # TODO: DELETE!
                     # Activity.NEPHROLOGY: 13  # TODO: DELETE!
                 })),
-                Nephrologist(4, "Interne", _activities=[
+                Nephrologist(4, "Nouvelle Recrue"),
+                Nephrologist(5, "Interne", _activities=[
                     Activity.NEPHROLOGY,
-                    Activity.OTHERS,
-                    Activity.OBLIGATION_RECOVERY
+                    Activity.OTHERS
                 ], _holidays=[
-                    date(2014, 12, 2)  # TODO: DELETE!
+                    # date(2014, 12, 2)  # TODO: DELETE!
                 ], _counters=Counter({
                     # Activity.NEPHROLOGY: 14,  # TODO: DELETE!
                     # Activity.OBLIGATION: 19,  # TODO: DELETE!

@@ -113,6 +113,7 @@ class MonthlyPlanning():
     def __str__(self):
         return "\n".join([str(self.daily_plannings[daily_planning]) for daily_planning in sorted(self.daily_plannings)])
 
+    # TODO: if all but ConstraintStrategy.NONE are uncommented, preferences are not flawlessly taken into account...
     def __compute__(self):
         self.holidays = dict()
         for x in Database.team():
@@ -146,9 +147,9 @@ class MonthlyPlanning():
                 current_daily_planning.__allocate_timeslot__(ConstraintStrategy.NONE.value, yesterday_profile, current_timeslot, self.holidays)
 
     def output(self):
-        from xlrd import open_workbook
+        # from xlrd import open_workbook
         from xlwt import Workbook, XFStyle, Borders, Alignment, Font, Pattern, Style, easyxf
-        from xlutils.copy import copy
+        # from xlutils.copy import copy
 
         '''
         rb = open_workbook(r"Templates\template.xls")
@@ -233,8 +234,6 @@ class MonthlyPlanning():
         style_cell_normal.font = font_cell_normal
         style_cell_normal.alignment.horz = Alignment.HORZ_CENTER
         style_cell_normal.alignment.vert = Alignment.VERT_CENTER
-        borders_cell_normal = Borders()
-        style_cell_normal.borders = borders_cell_normal
 
         style_cell_right = XFStyle()
         font_cell_right = Font()
@@ -332,8 +331,6 @@ class MonthlyPlanning():
                 style.pattern = Pattern()
             return style
 
-        import copy
-
         last_day = calendar.monthrange(self.year, self.month)[1]
         for x in range(1, last_day + 1):
             current_date = date(self.year, self.month, x)
@@ -348,6 +345,15 @@ class MonthlyPlanning():
             else:
                 sheet.write(row_offset + 5 + x, column_offset + 1, "", style_date_status)
 
+            '''
+            easyxf(
+                 'font: bold 1, name Tahoma, height 160;'
+                 'align: vertical center, horizontal center, wrap on;'
+                 'borders: left thin, right thin, top thin, bottom thin;'
+                 'pattern: pattern solid, pattern_fore_colour green, pattern_back_colour green'
+                 )
+            '''
+            
             # fill in month planning
             for y in Database.team():
                 current_activity = current_daily_planning.__get_activity__(TimeSlot.FIRST_SHIFT, y)

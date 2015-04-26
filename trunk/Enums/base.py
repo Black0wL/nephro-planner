@@ -43,11 +43,8 @@ class Base(Enum):
         return list([flag for flag in cls if flag.value != 0])
 
     @classmethod
-    def tostring(cls, val):
-        for k, v in cls.flags():
-            if v == val:
-                return k
-
-    @classmethod
-    def fromstring(cls, str):
-        return getattr(cls, str.upper(), None)
+    def __from_string__(cls, value):
+        for flag in cls.flags():
+            if flag.name == value:
+                return flag
+        return None

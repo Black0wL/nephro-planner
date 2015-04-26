@@ -29,7 +29,6 @@ def singleton(cls):
 @singleton
 class MonthlyPlanning():
     def __init__(self, _year, _month):
-        self.individual_counters = None
         self.year = _year
         self.month = _month
         self.daily_plannings = dict()
@@ -143,7 +142,7 @@ class MonthlyPlanning():
             for current_timeslot in current_daily_planning.profile:
                 if current_daily_planning.weekday in [0, 5, 6]:
                     current_daily_planning.__allocate_timeslot__(ConstraintStrategy.ALLOCATE_MORNING_DIALYSIS.value, yesterday_profile, current_timeslot, self.holidays)
-                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value, yesterday_profile, current_timeslot, self.holidays)
+                current_daily_planning.__allocate_timeslot__(ConstraintStrategy.FOCUS_ON_PREFERENCES.value + ConstraintStrategy.DISCARD_COUNTERS.value, yesterday_profile, current_timeslot, self.holidays)
                 current_daily_planning.__allocate_timeslot__(ConstraintStrategy.NONE.value, yesterday_profile, current_timeslot, self.holidays)
 
     def output(self):

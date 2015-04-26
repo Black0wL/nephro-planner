@@ -7,15 +7,16 @@ from Enums.activity import Activity
 from Enums.timeslot import TimeSlot
 from Models.sporadic_occurrence import SporadicOccurrence
 from Models.date_duration import DateDuration
+from Models.preferences import Preferences
+from Models.aversions import Aversions
 from datetime import date
 from free_slots import FreeSlots
 from collections import Counter
-import copy
 import sqlite3
 import calendar
 
 
-class Nephrologist(object):
+class Nephrologist:
     """ constructor of the class
 
         @param _id: unique identifier of a nephrologist.
@@ -27,9 +28,9 @@ class Nephrologist(object):
         @param _holidays: holidays or recovery days of a nephrologist
         @type _holidays: list
         @param _preferences: preferential working time slot/activity combination for a nephrologist
-        @type _preferences: dict
+        @type _preferences: Preferences
         @param _aversions: preferred not time slot/activity combination for a nephrologist
-        @type _aversions: dict
+        @type _aversions: Aversions
         @param _counters: initial counter of the nephrologist
         @type _counters: Counter
     """
@@ -58,24 +59,22 @@ class Nephrologist(object):
             raise UserWarning("holidays should be of type {}".format(list))
         self.holidays = _holidays if _holidays else []  # contains all personal off days (datetime)
 
-        if _preferences and not isinstance(_preferences, dict):
-            raise UserWarning("preferences should be of type {}".format(dict))
+        if _preferences and not isinstance(_preferences, Preferences):
+            raise UserWarning("preferences should be of type {}".format(Preferences))
         # contains all personal preferences that bind a nephrologist to a TimeSlot and a particular activity
-        self.preferences = _preferences if _preferences else {}
+        self.preferences = _preferences if _preferences else Preferences()
 
         if _aversions and not isinstance(_aversions, dict):
-            raise UserWarning("aversions should be of type {}".format(dict))
+            raise UserWarning("aversions should be of type {}".format(Aversions))
         # contains all personal aversions that a nephrologist has to a TimeSlot and a particular activity
-        self.aversions = _aversions if _aversions else {}
+        self.aversions = _aversions if _aversions else Aversions()
 
         if _counters and not isinstance(_counters, Counter):
             raise UserWarning("counters must be of type {}".format(Counter))
         self.initial_counters = _counters if _counters else Counter()
-        self.individual_counters = copy.deepcopy(self.initial_counters)
+        self.individual_counters = Counter() + self.initial_counters
 
     def counters(self):
-        # if _reset:
-        #     self.individual_counters = copy.deepcopy(self.initial_counters)
         return self.individual_counters
 
     # TODO: take into account month overflow if applicable

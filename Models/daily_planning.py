@@ -30,7 +30,6 @@ class DailyPlanning():
     obligation_activities = [Activity.OBLIGATION, Activity.OBLIGATION_WEEKEND, Activity.OBLIGATION_HOLIDAY]
 
     def __init__(self, _date):
-        self.individual_counters = None
         self.date = _date
 
         # if required, _calendar.is_working_day can deal with extra working days/holidays

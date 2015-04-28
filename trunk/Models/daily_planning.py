@@ -140,26 +140,30 @@ class DailyPlanning():
 
         current_activities = [x for x in self.profile[current_timeslot] if not self.__is_currently_allocated_activity__(current_timeslot, x)]
 
-        if len(current_team) > 0 and len(current_activities) > 0:
-            # instantiate a new problem
-            problem = Problem()
+        problem = None
+        if len(current_activities) > 0:
 
             '''
             shuffle(current_team)
             shuffle(current_activities)
             '''
 
-            # add the different activities to allocate
-            problem.addVariable(self.nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
-            problem.addVariable(self.activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
+            # get rid of nephrologist that have declared all current activities as aversions
+            current_team = [x for x in current_team if any([x.score(self.weekday, current_timeslot, act) >= 0 for act in current_activities])]
 
-            # constraints declaration
-            problem.addConstraint(AllDifferentConstraint())
-            problem.addConstraint(lambda nep, act: act in nep.activities, (self.nephrologist_key, self.activity_key))
+            if len(current_team) > 0:
+                # instantiate a new problem
+                problem = Problem()
 
-            return current_team, problem
-        else:
-            return current_team, None
+                # add the different activities to allocate
+                problem.addVariable(self.nephrologist_key, current_team)  # the whole nephrologists minus nephrologists in vacation on this specific day/shift
+                problem.addVariable(self.activity_key, current_activities)  # the whole nephrologists that can be allocated on this specific day/shift
+
+                # constraints declaration
+                problem.addConstraint(AllDifferentConstraint())
+                problem.addConstraint(lambda nep, act: act in nep.activities, (self.nephrologist_key, self.activity_key))
+
+        return current_team, problem
 
     def __allocate_whole_day__(self, constraint_level, yesterday_profile, holidays):
         for current_timeslot in self.profile:
@@ -285,13 +289,10 @@ class DailyPlanning():
 
                 solutions = problem.getSolutions()
 
-                retry = False
                 for solution in solutions:
                     if solution[self.nephrologist_key].id not in self.__currently_allocated_nephrologists__(current_timeslot):
-                        retry |= self.__slot__(current_timeslot, solution[self.activity_key], solution[self.nephrologist_key])
-
-                if retry:
-                    self.__allocate_timeslot__(constraint_level, yesterday_profile, current_timeslot, holidays)
+                        if self.__slot__(current_timeslot, solution[self.activity_key], solution[self.nephrologist_key]):
+                            self.__allocate_timeslot__(constraint_level, yesterday_profile, current_timeslot, holidays)
 
 '''
 _date = date(2014, 2, 5)

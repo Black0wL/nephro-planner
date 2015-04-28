@@ -47,6 +47,7 @@ class Database:
                         ]
                     }
                 }), _holidays=[
+                    DateDuration(date(2015, 5, 2), date(2015, 5, 17))
                 ], _counters=Counter({
                     Activity.DIALYSIS: 5
                 })),
@@ -75,9 +76,11 @@ class Database:
                             Activity.OBLIGATION
                         ]
                     }
-                }), _counters=Counter({
+                }), _holidays=[
+                    DateDuration(date(2015, 5, 14), date(2015, 5, 17))
+                ], _counters=Counter({
                 })),
-                Nephrologist(3, "S\e9verine", _preferences=Preferences({
+                Nephrologist(3, "Séverine", _preferences=Preferences({
                     0: {  # monday
                         TimeSlot.SECOND_SHIFT: [
                             Activity.CONSULTATION
@@ -108,20 +111,43 @@ class Database:
                         ]
                     }
                 }), _holidays=[
-                    date(2014, 12, 5),
-                    date(2014, 12, 7)
+                    # date(2014, 12, 5),
+                    # date(2014, 12, 7),
                     # SporadicOccurrence(timedelta(days=3), timedelta(days=7)),
                     # DateDuration(_lower_date=date(2014, 12, 25), _upper_date=date(2015, 1, 7))
                 ], _counters=Counter({
                 })),
-                # Nephrologist(4, "Nouvelle Recrue"),
-                Nephrologist(4, "Interne", _activities=[
+                Nephrologist(4, "Loudmila", _preferences=Preferences({
+                    0: {  # monday
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.DIALYSIS
+                        ]
+                    },
+                    2: {  # wednesday
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.DIALYSIS
+                        ]
+                    },
+                    4: {  # friday
+                        TimeSlot.FIRST_SHIFT: [
+                            Activity.CONSULTATION
+                        ],
+                        TimeSlot.SECOND_SHIFT: [
+                            Activity.OBLIGATION_RECOVERY
+                        ]
+                    }
+                })),
+                Nephrologist(5, "Interne", _activities=[
                     Activity.NEPHROLOGY,
                     Activity.OTHERS
                 ], _holidays=[
+                    DateDuration(date(2015, 5, 1), date(2015, 5, 14)),
+                    DateDuration(date(2015, 5, 16), date(2015, 5, 31))
                 ], _counters=Counter({
                 }))
             ]
+            '''
+            '''
         return Database._team
 
     @classmethod

@@ -24,6 +24,7 @@ def main():
         return
         '''
 
+        '''
         import codecs
         import json
         from Utils.custom_encoder import CustomEncoder
@@ -32,15 +33,6 @@ def main():
 
         # print(json.dumps(Counter({Activity.OBLIGATION: 5}), cls=CustomEncoder, indent=4, sort_keys=True, ensure_ascii=False))
 
-        '''
-        s = u'Capit\xe1n'
-        sutf8 = s.encode('UTF-8')
-        open('data.txt', 'w').write(sutf8)
-
-        t = open('data.txt').read()
-        print str(t).decode('string_escape')
-        return
-        '''
         from pprint import pprint
 
         with open("data.txt", "wb") as outfile:
@@ -54,6 +46,11 @@ def main():
             sutf8 = s2u.encode("utf-8")
             # print sutf8
             outfile.write(sutf8)
+
+        for n in Database.team():
+            print repr(n)
+
+        return
 
 
 
@@ -97,6 +94,7 @@ def main():
             print(type(data))
             print pprint(data)
         return
+        '''
 
 
 

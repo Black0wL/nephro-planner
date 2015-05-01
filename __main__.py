@@ -18,13 +18,6 @@ def main():
         # Database.__create__()
         # Nephrologist.__load__()
 
-        '''
-        from Enums.activity import Activity
-        print sum([x.counters[y] for x in Database.team() for y in Activity.flags()])
-        return
-        '''
-
-        '''
         import codecs
         import json
         from Utils.custom_encoder import CustomEncoder
@@ -33,24 +26,24 @@ def main():
 
         # print(json.dumps(Counter({Activity.OBLIGATION: 5}), cls=CustomEncoder, indent=4, sort_keys=True, ensure_ascii=False))
 
-        from pprint import pprint
+        # from pprint import pprint
 
-        with open("data.txt", "wb") as outfile:
+        import io
+        with io.open("data.txt", "wb") as outfile:
         # with codecs.open("data.txt", "w", encoding="utf8") as outfile:
-            s = json.dumps(Database.team(), cls=CustomEncoder, indent=4, sort_keys=True, encoding="utf-8")
-            # s = "Séverine"
+            s = json.dumps(Database.team(), cls=CustomEncoder, indent=4, sort_keys=True, encoding="latin-1")
             # print s
             # s2u = u"%s" % s  # incorrect
-            s2u = unicode(s, "utf-8")
+            s2u = unicode(s, "latin-1")
             # print s2u
-            sutf8 = s2u.encode("utf-8")
+            sutf8 = s2u.encode("latin-1")
             # print sutf8
             outfile.write(sutf8)
 
+        '''
         for n in Database.team():
             print repr(n)
-
-        return
+        '''
 
 
 
@@ -65,7 +58,7 @@ def main():
             elif "__nephrologist__" in o:
                 nephrologist = o["__nephrologist__"]
                 id = int(nephrologist["id"]) if "id" in nephrologist else None
-                name = str(nephrologist["name"]) if "name" in nephrologist else None
+                name = str(nephrologist["name"].encode("latin-1")) if "name" in nephrologist else None
                 activities = [Activity.__from_string__(flag) for flag in nephrologist["activities"] if "activities" in nephrologist]
                 holidays = [__recursive_object_hook__(value) for value in nephrologist["holidays"] if "holidays" in nephrologist]
                 preferences = __recursive_object_hook__(nephrologist["preferences"]) if "preferences" in nephrologist else None
@@ -84,18 +77,23 @@ def main():
                 return o
 
         from Utils.custom_decoder import CustomDecoder
-        with open("data.txt", "rb") as infile:
+        with io.open("data.txt", "rb") as infile:
             # reads = unicode(infile.read(), 'utf-8')
-            reads = infile.read().decode("utf-8")
-            print(reads)
+            r = infile.read().decode("unicode-escape")
+            print("Séver")
+            print(u"Séver")
+            print(str("Séver"))
+            print(r[3990:3995])
+            # r2u = unicode(r, "utf-8")
+            # print(r)
             # print(reads)
             # data = CustomDecoder().decode(reads)
-            data = json.loads(reads, object_hook=__recursive_object_hook__)
-            print(type(data))
-            print pprint(data)
+            data = json.loads(r, object_hook=__recursive_object_hook__)
+            print(unicode(data[2].name, "utf-8"))
+            print(unicode(Database.team()[2].name, "utf-8"))
+            # print(type(data))
+            # print pprint(data)
         return
-        '''
-
 
 
 

@@ -1,0 +1,1 @@
+Purpose is to provide a light-weight, client-based solution with minimalist user interface to generate PDF-based plannings for nephrologists
